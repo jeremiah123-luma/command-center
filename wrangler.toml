@@ -1,0 +1,39 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "command-center"
+main = "src/worker.js"
+compatibility_date = "2025-06-01"
+compatibility_flags = ["nodejs_compat"]
+
+# The dashboard's static files (HTML, manifest, service worker, icons).
+# run_worker_first = true means the Worker sees every request first, so it can
+# gate the whole site behind the PIN before handing static files back.
+[assets]
+directory = "public"
+binding = "ASSETS"
+run_worker_first = true
+
+# Small key-value store: Google refresh token, cached Canvas snapshot,
+# dismissed-item ids, saved notes, login sessions.
+# Create it once with:  npx wrangler kv namespace create STATE
+# then paste the id it prints below.
+[[kv_namespaces]]
+binding = "STATE"
+id = "ec9e55a03e9a4277aa81081417523e29"
+
+[vars]
+CANVAS_BASE = "https://njit.instructure.com"
+TIMEZONE = "America/New_York"
+# Optional: which Claude model /api/chat uses. Haiku keeps it cheap.
+CHAT_MODEL = "claude-haiku-4-5"
+
+# Secrets (never in this file). Set each with:  npx wrangler secret put NAME
+#   PIN               the 4-8 digit code you type to unlock the app
+#   SESSION_SECRET    any long random string (signs the login cookie)
+#   CANVAS_TOKEN      your Canvas access token
+#   GOOGLE_CLIENT_ID  from Google Cloud console (OAuth client, Web application)
+#   GOOGLE_CLIENT_SECRET
+#   ANTHROPIC_API_KEY optional — enables the in-app chat; leave unset to disable
+
+# Warm the Canvas cache twice an hour so the app opens instantly.
+[triggers]
+crons = ["*/30 * * * *"]

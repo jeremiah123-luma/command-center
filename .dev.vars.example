@@ -1,0 +1,7 @@
+# Copy to .dev.vars for local `npm run dev` (never commit .dev.vars)
+PIN=1234
+SESSION_SECRET=change-me-to-a-long-random-string
+CANVAS_TOKEN=
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+# ANTHROPIC_API_KEY=

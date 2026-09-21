@@ -1,0 +1,12 @@
+{
+  "name": "command-center",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "build:frontend": "python3 build_frontend.py"
+  },
+  "devDependencies": { "wrangler": "^4" }
+}
