@@ -41,7 +41,7 @@ export default {
       }
       if (path === "/login") return request.method === "POST" ? handleLoginPost(request, env) : loginPage();
       if (path === "/logout") return logout(url);
-      if (path === "/manifest.webmanifest" || path === "/sw.js" || path.startsWith("/icons/")) return env.ASSETS.fetch(request);
+      if (path === "/manifest.webmanifest" || path === "/sw.js" || path.startsWith("/icons/") || path === "/privacy" || path === "/terms") return env.ASSETS.fetch(request);
 
       // ---- everything below needs a valid session ----
       const authed = await hasSession(request, env);
