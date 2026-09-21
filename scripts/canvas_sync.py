@@ -39,7 +39,7 @@ snap = {"updatedAt": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "items": items,
         "counts": {"open": sum(1 for x in items if not x["submitted"] and not x["excused"]), "submitted": sum(1 for x in items if x["submitted"])}}
 if os.environ.get("INGEST_URL"):
     req = urllib.request.Request(os.environ["INGEST_URL"], data=json.dumps(snap).encode(), method="POST",
-          headers={"content-type": "application/json", "x-ingest-secret": os.environ["INGEST_SECRET"]})
+          headers={"content-type": "application/json", "user-agent": "CommandCenter-sync/1.0", "x-ingest-secret": os.environ["INGEST_SECRET"]})
     with urllib.request.urlopen(req, timeout=30) as r: print("ingest:", r.status, r.read().decode()[:120])
 else:
     json.dump(snap, sys.stdout, indent=1)
