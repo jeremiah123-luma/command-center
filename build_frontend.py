@@ -162,7 +162,7 @@ head = f'''<!doctype html>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>{title}</title>
 <meta name="description" content="Live personal dashboard: Canvas coursework, schedule, inbox, and a voice link.">
-<meta name="theme-color" content="#05080e">
+<meta name="theme-color" content="#000000">
 <meta name="color-scheme" content="dark">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -180,8 +180,8 @@ head = f'''<!doctype html>
   html{{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}}
   body{{margin:0}} img{{max-width:100%}} [hidden]{{display:none!important}}
   a.retry{{text-decoration:none}}
-  .logout{{position:fixed;left:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:5;font-family:"Share Tech Mono",monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--faint);text-decoration:none;opacity:.6}}
-  .logout:hover{{color:var(--holo);opacity:1}}
+  .logout{{position:fixed;left:16px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:5;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);text-decoration:none;opacity:.6}}
+  .logout:hover{{color:var(--o);opacity:1}}
 </style>
 </head>
 <body>
