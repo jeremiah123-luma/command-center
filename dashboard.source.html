@@ -89,6 +89,9 @@
   /* ══ OVERVIEW ══ headline (what's next, in words) → departures board → timeline → one-line summary */
   .a-head,.a-alert,.a-dep,.a-tl,.a-sum{grid-column:span 12}
   .head{padding:26px 24px 24px}
+  .wxbg{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;image-rendering:pixelated;
+    -webkit-mask-image:linear-gradient(#000 0,#000 45%,transparent 100%);mask-image:linear-gradient(#000 0,#000 45%,transparent 100%)}
+  .head > :not(.wxbg){position:relative}
   .head .eyebrow{margin:0;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   .sent{margin:14px 0 0;font-weight:600;font-size:clamp(30px,4.4vw,64px);line-height:1;letter-spacing:-.045em;text-wrap:balance;max-width:22ch;color:var(--ink)}
   .sent a{text-decoration:none} .sent a:hover{color:var(--o)}
@@ -374,6 +377,15 @@
     .np{left:var(--gut);right:var(--gut);width:auto;transform:none;bottom:calc(80px + env(safe-area-inset-bottom,0px))}
     body.np-on .board > .page{padding-bottom:166px}
     body::after{opacity:calc(var(--grain,.07) * .7)}
+    /* the pager runs to the bottom edge of the glass; the dock + Spotify bar float over it */
+    :root{padding-bottom:0}
+    body.np-on .wrap{padding-bottom:0}
+    .board > .page{padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))}
+    body.np-on .board > .page{padding-bottom:calc(166px + env(safe-area-inset-bottom,0px))}
+    .board > .page.p-fill,body.np-on .board > .page.p-fill{padding-bottom:0}
+    .page.p-fill > .panel{border-bottom:0}
+    .board .page.p-fill .panel-body{max-height:none;padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))}
+    body.np-on .board .page.p-fill .panel-body{padding-bottom:calc(166px + env(safe-area-inset-bottom,0px))}
   }
 </style>
 
@@ -400,6 +412,7 @@
     <!-- page 0 · overview -->
     <div class="page" data-page="overview" style="display:contents">
       <section class="panel a-head head" id="hero" aria-label="Next up">
+        <canvas class="wxbg" id="wxbg" aria-hidden="true" hidden></canvas>
         <p class="eyebrow" id="hero-eyebrow">Next up</p>
         <h2 class="sent" id="hero-title">Loading…</h2>
         <div class="left" id="hero-leftwrap" hidden><span class="big" id="hero-left"></span><span class="of">left</span></div>
@@ -726,7 +739,7 @@
       .map(function(x){ if(!x.__due) x.__due=x.dueAt?new Date(x.dueAt):null; return x; });
   }
   function courseOf(s){ var m=String(s||"").match(/\b([A-Z]{2,4})\s?-?(\d{3})\b/); return m?m[1]+" "+m[2]:""; }
-  function cleanTitle(s){ return String(s||"").replace(/^[📌📚📝]\s*/u,"").replace(/^due( \d{1,2}:\d{2} ?[ap]m)?:?\s*/i,"").replace(/\s+due\b(?=\s*[(\[]|\s*$)/i,"").trim()||"Untitled"; }
+  function cleanTitle(s){ return String(s||"").replace(/^[📌📚📝]\s*/u,"").replace(/^due( \d{1,2}:\d{2} ?[ap]m)?:?\s*/i,"").replace(/\s+due\b(?=\s*[(\[]|\s*$)/i,"").replace(/\s*\[[A-Z]{2}\d{2}-[^\]]+\]\s*$/,"").trim()||"Untitled"; }
   function tm(d){ return new Date(d).toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"}); }
   function dayOffset(d){ return Math.round((startOfDay(d)-startOfDay(new Date()))/86400000); }
   function whenWords(d,allDay){ var n=dayOffset(d), h=d.getHours();
@@ -749,7 +762,7 @@
       // an all-day "HW due" means by the end of that day; an all-day quiz just means that day
       var due=e.__allDay&&e.__type==="due"?new Date(startOfDay(e.__start).getTime()+86340000):e.__start;
       if(due<=now&&!(e.__allDay&&e.__type==="exam"&&dayOffset(e.__start)===0)) return;
-      if(e.__type==="exam") out.push({title:cleanTitle(e.summary),course:e.__course||courseOf(e.summary)||"Exam",due:due,pts:0,url:e.htmlLink,kind:"exam",allDay:e.__allDay});
+      if(e.__type==="exam"&&!ownedByCanvas(e.summary)) out.push({title:cleanTitle(e.summary),course:e.__course||courseOf(e.summary)||"Exam",due:due,pts:0,url:e.htmlLink,kind:"exam",allDay:e.__allDay});
       else if(e.__type==="due"&&!ownedByCanvas(e.summary)) out.push({title:cleanTitle(e.summary),course:courseOf(e.summary)||"Calendar",due:due,pts:0,url:e.htmlLink,kind:"hw"}); });
     return out.sort(function(a,b){return a.due-b.due;});
   }
@@ -774,6 +787,7 @@
       $("hero-title").innerHTML=x.url?'<a href="'+esc(x.url)+'" target="_blank" rel="noopener">'+inner+'</a>':inner;
     }
     var ms=x.due-Date.now(), hrs=ms/3600000;
+    if(x.allDay){ head.className="panel a-head head soon"; $("hero-leftwrap").hidden=true; $("hero-barwrap").hidden=true; tlNow(); return; }
     head.className="panel a-head head"+(hrs<24?" urgent":hrs<72?" soon":"");
     if(!heroSlots){
       var host=$("hero-left"); host.innerHTML=""; heroSlots=[];
@@ -1095,14 +1109,95 @@
 
   /* ── chips: weather where you'll be · next big exam ── */
   CC.weather=null;
+
+  /* ── weather sky: a faint dithered sky behind the headline, drawn from the live weather where you are ──
+     Same 4×4 dither as the mic orb. ~22% brightness, 30 fps max, stops when the Overview isn't on screen,
+     one still frame with Reduce Motion. Rain/storm/snow/night get a cool tint; the sun is the only warm pixel. */
+  var wxSky=(function(){
+    var hero=$("hero"), cv=$("wxbg"); if(!hero||!cv||!cv.getContext) return {update:function(){}};
+    var ctx=cv.getContext("2d"), off=document.createElement("canvas"), octx=off.getContext("2d");
+    var REDUCED=!!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);
+    var TINT={n:[[230,230,230],[230,230,230]],rain:[[118,146,196],[150,188,242]],storm:[[124,122,170],[150,188,242]],snow:[[204,218,240],[238,245,255]],night:[[168,178,204],[210,220,240]]};
+    var BAYER=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];
+    var W=null, T=null, on=false, seen=true, raf=0, t0=performance.now(), last=0, lastDraw=0, flash=0, nextFlash=0, drops=[], flakes=[];
+    var PX=4, cw=0, ch=0, img=null, grid=null, pgrid=null, sunG=null, gw=0, gh=0, DPR=Math.min(2,window.devicePixelRatio||1);
+    function hash(x,y){ var h=x*374761393+y*668265263; h=(h^(h>>>13))*1274126177; return ((h^(h>>>16))>>>0)/4294967295; }
+    function vn(x,y){ var xi=Math.floor(x), yi=Math.floor(y), xf=x-xi, yf=y-yi, u=xf*xf*(3-2*xf), v=yf*yf*(3-2*yf), a=hash(xi,yi), b=hash(xi+1,yi), c=hash(xi,yi+1), d=hash(xi+1,yi+1); return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v; }
+    function fbm(x,y){ return vn(x,y)*.55+vn(x*2.1,y*2.1)*.3+vn(x*4.3,y*4.3)*.15; }
+    function sm(a,b,x){ var t=Math.max(0,Math.min(1,(x-a)/(b-a))); return t*t*(3-2*t); }
+    function params(w){
+      var c=w.current||{}, code=c.weather_code|0, word=weatherWord(code), day=c.is_day!==0;
+      var cloud=(c.cloud_cover!=null?+c.cloud_cover:(code<=1?10:code<=3?70:90))/100, mm=+c.precipitation||0;
+      var wet=/rain|drizzle|showers|storms/.test(word), snowy=word==="snow";
+      var p={cloud:Math.max(cloud*0.9,(wet||snowy)?0.6:0), rain:wet?Math.min(1,0.3+mm/3):0, snow:snowy?Math.min(1,0.45+(+c.snowfall||0)/2):0,
+        fog:word==="fog"?1:0, storm:word==="storms"?1:0, night:day?0:1, sun:day?Math.max(0,1-cloud*1.3):0,
+        wind:Math.min(1,(+c.wind_speed_10m||8)/40), from:c.wind_direction_10m!=null?+c.wind_direction_10m:250};
+      if(p.storm){ p.rain=Math.max(p.rain,0.9); p.cloud=1; }
+      var tn=TINT[p.storm?"storm":p.rain>0?"rain":p.snow>0?"snow":!day?"night":"n"];
+      p.cr=tn[0][0]; p.cg=tn[0][1]; p.cb=tn[0][2]; p.pr=tn[1][0]; p.pg=tn[1][1]; p.pb=tn[1][2]; return p;
+    }
+    function ease(dt){ for(var k in T){ if(k!=="from") W[k]+=(T[k]-W[k])*Math.min(1,dt*1.5); } W.from=T.from; }
+    function slant(){ return W.wind*0.55*(Math.sin((W.from+180)*Math.PI/180)<0?-1:1); }
+    function field(x,y,w,h,t){
+      var drift=t*(0.018+W.wind*0.05), cl=0, sun=0, moon=0, fog=0;
+      if(W.cloud>0.01){ var cut=1-W.cloud*0.75; cl=sm(cut-0.12,cut+0.18,fbm(x/(w*0.22)+drift,y/(h*0.3)+drift*0.2))*(0.35+0.65*W.cloud)*(1-0.45*(y/h)); }
+      if(W.sun>0.01){ var dx=(x-w*0.86)/w, dy=(y-h*0.1)/w, d=Math.sqrt(dx*dx+dy*dy); sun=W.sun*Math.pow(Math.max(0,1-d/0.32),2.2)*(1-cl*0.7); }
+      if(W.night>0.01){ var mx=(x-w*0.82)/w, my=(y-h*0.2)/w, md=Math.sqrt(mx*mx+my*my); moon=W.night*(md<0.035?0.9:Math.max(0,0.22-(md-0.035)*2.4)); }
+      if(W.fog>0.01){ fog=W.fog*(0.28+0.22*Math.sin(y/h*9+fbm(x/(w*0.5)+t*0.03,y/h*2)*4+t*0.15))*(0.5+0.5*(y/h)); }
+      return {v:Math.min(1,cl+sun*0.95+moon+fog+flash*0.55*W.cloud),sun:sun};
+    }
+    function step(w,h,dt,t){
+      var wantR=Math.round(W.rain*(w*h/2600)), wantS=Math.round(W.snow*(w*h/3600)), sl=slant();
+      while(drops.length<wantR) drops.push({x:Math.random()*w*1.3-w*0.15,y:Math.random()*h,l:10+Math.random()*16,s:420+Math.random()*260});
+      if(drops.length>wantR) drops.length=wantR;
+      while(flakes.length<wantS) flakes.push({x:Math.random()*w,y:Math.random()*h,r:1+Math.random()*1.8,s:22+Math.random()*28,p:Math.random()*6});
+      if(flakes.length>wantS) flakes.length=wantS;
+      drops.forEach(function(d){ d.y+=d.s*dt; d.x+=d.s*dt*sl; if(d.y>h+20){ d.y=-20-Math.random()*40; d.x=Math.random()*w*1.3-w*0.15; } });
+      flakes.forEach(function(f){ f.y+=f.s*dt; f.x+=Math.sin(t*0.9+f.p)*0.35+sl*f.s*dt*0.6; if(f.y>h+6){ f.y=-6; f.x=Math.random()*w; } if(f.x>w+6) f.x=-6; if(f.x<-6) f.x=w+6; });
+      if(W.storm>0.5&&t>nextFlash){ flash=1; nextFlash=t+4+Math.random()*7; }
+      flash=Math.max(0,flash-dt*3.2);
+    }
+    function draw(w,h,t){
+      PX=w<560?3:4; var ncw=Math.ceil(w/PX), nch=Math.ceil(h/PX), cell=PX*2;
+      if(ncw!==cw||nch!==ch){ cw=ncw; ch=nch; off.width=cw; off.height=ch; img=octx.createImageData(cw,ch); gw=Math.ceil(cw/2); gh=Math.ceil(ch/2); grid=new Float32Array(gw*gh); pgrid=new Float32Array(gw*gh); sunG=new Float32Array(gw*gh); }
+      for(var j=0;j<gh;j++) for(var i=0;i<gw;i++){ var f=field((i+.5)*cell,(j+.5)*cell,w,h,t), gi=j*gw+i; grid[gi]=f.v; sunG[gi]=f.sun; pgrid[gi]=0; }
+      if(W.night>0.05) for(var s=0;s<gw*gh*0.012;s++){ var sx=Math.floor(hash(s,7)*gw), sy=Math.floor(hash(s,11)*gh*0.7); pgrid[sy*gw+sx]=Math.max(pgrid[sy*gw+sx],W.night*0.6*(0.5+0.5*Math.sin(t*1.3+s))); }
+      var sl=slant();
+      drops.forEach(function(d){ var n=Math.max(1,Math.round(d.l/cell*1.2)); for(var k=0;k<n;k++){ var gx=Math.floor((d.x-k*(d.l/n)*sl)/cell), gy=Math.floor((d.y-k*(d.l/n))/cell); if(gx>=0&&gy>=0&&gx<gw&&gy<gh) pgrid[gy*gw+gx]=Math.min(1,pgrid[gy*gw+gx]+0.6*(1-k/n)); } });
+      flakes.forEach(function(f){ var gx=Math.floor(f.x/cell), gy=Math.floor(f.y/cell); if(gx>=0&&gy>=0&&gx<gw&&gy<gh) pgrid[gy*gw+gx]=Math.min(1,pgrid[gy*gw+gx]+0.5+f.r*0.15); });
+      var d=img.data, cr=W.cr|0, cg=W.cg|0, cb=W.cb|0, pr=W.pr|0, pg=W.pg|0, pb=W.pb|0;
+      for(var y=0;y<ch;y++) for(var x=0;x<cw;x++){
+        var g=Math.min(gh-1,y>>1)*gw+Math.min(gw-1,x>>1), v=grid[g], p=pgrid[g], su=sunG[g], k=(y*cw+x)*4;
+        if(Math.max(v,p)*0.95>(BAYER[(y&3)*4+(x&3)]+.5)/16){ if(su>0.18&&su>v*0.5){ d[k]=255; d[k+1]=77; d[k+2]=0; } else if(p>v){ d[k]=pr; d[k+1]=pg; d[k+2]=pb; } else { d[k]=cr; d[k+1]=cg; d[k+2]=cb; } d[k+3]=255; }
+        else d[k+3]=0;
+      }
+      octx.putImageData(img,0,0);
+      var bw=Math.round(w*DPR), bh=Math.round(h*DPR); if(cv.width!==bw||cv.height!==bh){ cv.width=bw; cv.height=bh; }
+      ctx.setTransform(DPR,0,0,DPR,0,0); ctx.clearRect(0,0,w,h); ctx.imageSmoothingEnabled=false; ctx.globalAlpha=0.22; ctx.drawImage(off,0,0,cw*PX,ch*PX); ctx.globalAlpha=1;
+    }
+    function render(now,dt){ var r=hero.getBoundingClientRect(), w=Math.round(r.width), h=Math.round(r.height); if(w<2||h<2) return;
+      var t=REDUCED?20:(now-t0)/1000; ease(dt); step(w,h,REDUCED?0:dt,t); draw(w,h,t); }
+    function frame(now){ raf=0; if(!on||document.hidden||!seen) return; raf=requestAnimationFrame(frame);
+      if(now-lastDraw<33) return; var dt=Math.min(0.1,(now-(last||now))/1000); last=now; lastDraw=now; render(now,dt); }
+    function kick(){ if(!on) return; if(REDUCED){ render(performance.now(),1); return; } last=0; if(!raf) raf=requestAnimationFrame(frame); }
+    document.addEventListener("visibilitychange",kick);
+    window.addEventListener("resize",function(){ if(REDUCED) kick(); });
+    if("IntersectionObserver" in window) new IntersectionObserver(function(es){ seen=es[es.length-1].isIntersecting; kick(); }).observe(hero);
+    function update(){
+      var X=CC.weather; if(!X) return; var w=X[whereNow()]; if(!w||!w.current) return;
+      T=params(w); if(!W) W=Object.assign({},T); on=true; cv.hidden=false;
+      if(REDUCED){ W=Object.assign({},T); for(var i=0;i<40;i++) step(800,300,0.05,i*0.05); } kick();
+    }
+    return {update:update};
+  })();
   function weatherWord(c){ return c<=1?"clear":c<=3?"cloudy":c<=48?"fog":c<=57?"drizzle":c<=67?"rain":c<=77?"snow":c<=82?"showers":c<=86?"snow":"storms"; }
   function whereNow(){ var now=new Date(), t=campusOn(now); return t.length&&now<t[t.length-1].__end&&now>=leaveAt(t[0])?"campus":"home"; }
   async function loadWeather(){
     try{
       var P=CC.places, url="https://api.open-meteo.com/v1/forecast?latitude="+P.campus.lat+","+P.home.lat+"&longitude="+P.campus.lon+","+P.home.lon
-        +"&current=temperature_2m,weather_code&hourly=precipitation_probability&temperature_unit=fahrenheit&timezone=America%2FNew_York&forecast_days=2";
+        +"&current=temperature_2m,weather_code,is_day,cloud_cover,precipitation,snowfall,wind_speed_10m,wind_direction_10m&hourly=precipitation_probability&temperature_unit=fahrenheit&timezone=America%2FNew_York&forecast_days=2";
       var r=await fetch(url); if(!r.ok) return; var j=await r.json(); if(!Array.isArray(j)) return;
-      CC.weather={campus:j[0],home:j[1],at:Date.now()}; renderChips();
+      CC.weather={campus:j[0],home:j[1],at:Date.now()}; renderChips(); wxSky.update();
     }catch(e){}
   }
   function weatherChip(){

@@ -149,19 +149,25 @@ function logout(url) {
 }
 function loginPage(msg = "", status = 200) {
   return html(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Command Center — Unlock</title>
-<link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#05080e">
+<title>Command Center</title>
+<link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#000000">
+<link rel="apple-touch-icon" href="/icons/icon-180.png?v=2"><link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png?v=2">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Command Center"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@500;600&family=Geist+Mono:wght@400;500&display=swap">
 <style>
-  html,body{height:100%;margin:0;background:#05080e;color:#dceaf3;font-family:"Rajdhani","Exo 2",system-ui,sans-serif;display:grid;place-items:center}
-  form{width:min(360px,90vw);padding:28px 26px;border:1px solid rgba(92,230,255,.28);border-radius:6px;background:rgba(10,20,32,.72);position:relative;text-align:center}
-  h1{margin:0 0 6px;font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:#5ce6ff;text-shadow:0 0 18px rgba(92,230,255,.3)}
-  p{margin:0 0 20px;font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.14em;color:#86a6b8;text-transform:uppercase}
-  input{width:100%;box-sizing:border-box;font:600 34px ui-monospace,monospace;letter-spacing:.5em;text-align:center;padding:12px 0 12px .5em;background:rgba(5,8,14,.7);border:1px solid rgba(92,230,255,.28);color:#fff;border-radius:4px;outline:none}
-  input:focus{border-color:#5ce6ff;box-shadow:0 0 14px rgba(92,230,255,.25)}
-  button{margin-top:16px;width:100%;padding:12px;font:600 13px ui-monospace,monospace;letter-spacing:.24em;text-transform:uppercase;background:rgba(92,230,255,.1);border:1px solid #5ce6ff;color:#5ce6ff;border-radius:4px;cursor:pointer}
-  .err{color:#ff4f63;margin-top:12px;font-family:ui-monospace,monospace;font-size:12px;letter-spacing:.1em}
+  html,body{height:100%;margin:0;background:#000;color:#E6E6E6;font-family:"Geist",system-ui,sans-serif;display:grid;place-items:center}
+  form{width:min(340px,88vw);display:flex;flex-direction:column;gap:14px}
+  img{width:64px;height:64px;border-radius:14px;margin-bottom:6px}
+  h1{margin:0;font-weight:600;font-size:28px;letter-spacing:-.04em;line-height:1}
+  p{margin:0;font-family:"Geist Mono",ui-monospace,monospace;font-size:11px;letter-spacing:.08em;color:#757575;text-transform:uppercase}
+  input{width:100%;box-sizing:border-box;font:500 30px "Geist Mono",ui-monospace,monospace;letter-spacing:.45em;text-align:center;padding:12px 0 12px .45em;background:#000;border:1px solid #2E2E2E;color:#fff;outline:none}
+  input:focus{border-color:#FF4D00}
+  button{width:100%;padding:13px;font:500 12px "Geist Mono",ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase;background:#E6E6E6;border:0;color:#000;cursor:pointer}
+  button:hover{background:#FF4D00}
+  .err{color:#FF4D4D;font-family:"Geist Mono",ui-monospace,monospace;font-size:12px}
 </style></head><body>
 <form method="post" action="/login" autocomplete="off">
+  <img src="/icons/icon-180.png?v=2" alt="">
   <h1>Command Center</h1><p>Enter access code</p>
   <input name="pin" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" autofocus required aria-label="Access code">
   <button type="submit">Unlock</button>
