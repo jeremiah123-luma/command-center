@@ -154,7 +154,7 @@
     -webkit-mask-image:linear-gradient(90deg,#000 0,#000 92%,transparent);mask-image:linear-gradient(90deg,#000 0,#000 92%,transparent)}
   .tl-scroll.drag{cursor:grabbing;user-select:none}
   .tl-scroll.end{-webkit-mask-image:none;mask-image:none}
-  .tl-track{position:relative;height:168px}
+  .tl-track{position:relative;height:192px}
   .tl-day{position:absolute;top:0;bottom:0;border-left:1px solid var(--line)}
   .tl-day .dl{position:absolute;left:8px;top:6px;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
   .tl-day.today .dl{color:var(--o)}
@@ -166,13 +166,13 @@
   .tl-blk.study{border-color:rgba(0,255,155,.35);color:var(--g)}
   .tl-pin{position:absolute;display:flex;flex-direction:column;align-items:flex-start;white-space:nowrap;text-decoration:none;z-index:2}
   .tl-pin b{font-weight:500;font-size:12px;color:var(--o);background:var(--k);padding:0 5px 0 0}
-  .tl-pin b small{font-family:var(--mono);font-size:10px;font-weight:400;margin-left:6px;color:var(--muted)}
+  .tl-pin b small{font-family:var(--mono);font-size:10px;font-weight:500;margin-right:4px;color:inherit}
   .tl-pin i{position:absolute;left:0;width:1px;background:var(--o)}
   .tl-pin.exam b{color:var(--y)} .tl-pin.exam i{background:var(--y)}
   .tl-pin.r{align-items:flex-end;transform:translateX(-100%)} .tl-pin.r b{padding:0 0 0 5px} .tl-pin.r i{left:auto;right:0}
   .tl-past{opacity:.33}
   .tl-now{position:absolute;top:26px;height:112px;width:2px;background:var(--ink);transform:translateX(-50%);z-index:3}
-  .tl-now span{position:absolute;top:100%;margin-top:22px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:10px;color:var(--ink);white-space:nowrap;background:var(--k);padding:0 4px}
+  .tl-now span{position:absolute;top:100%;margin-top:20px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:10px;color:var(--ink);white-space:nowrap;background:var(--k);padding:0 4px}
   .tl-hint{font-family:var(--mono);font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;padding:4px 16px 12px}
 
   .sumline{font-family:var(--mono);font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);display:flex;gap:18px;flex-wrap:wrap;padding:12px 16px}
@@ -502,7 +502,7 @@
 
   function tick(){
     var d=new Date();
-    $("clock").textContent=d.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"}).toUpperCase()+" · "+d.toLocaleTimeString(undefined,{hour:"2-digit",minute:"2-digit",hour12:false});
+    $("clock").textContent=d.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"}).toUpperCase()+" · "+d.toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"});
     renderHero(); renderCanvasSync();
   }
   setInterval(tick,30000);
@@ -811,12 +811,12 @@
     });
     var levelEnd=[-1e9,-1e9,-1e9];
     list.filter(function(p){return p.kind!=="exam"&&+p.due<end;}).forEach(function(p){
-      var px=x(+p.due), label=shortTitle(p.title), w=Math.round(label.length*6.9+62), dayEnd=(Math.floor((+p.due-start)/DAY)+1)*SEG;
-      var right=px+w>dayEnd-4, a=right?px-w:px, b=right?px:px+w, lv=0;
+      var px=x(+p.due), label=shortTitle(p.title), w=Math.round(label.length*6.9+70), dayEnd=(Math.floor((+p.due-start)/DAY)+1)*SEG;
+      var right=px+w>dayEnd-4||px>dayEnd-tlSEG*0.45, a=right?px-w:px, b=right?px:px+w, lv=0;
       while(lv<2&&a<levelEnd[lv]+10) lv++;
       levelEnd[lv]=Math.max(levelEnd[lv],b);
       var top=26+lv*20;
-      html+='<a class="tl-pin'+(right?" r":"")+'" style="left:'+px+'px;top:'+top+'px"'+(p.url?' href="'+esc(p.url)+'" target="_blank" rel="noopener"':'')+' title="'+esc(p.title+" · due "+whenWords(p.due))+'"><b>'+esc(label)+' due<small>'+esc(tm(p.due))+'</small></b><i style="top:16px;height:'+(118-top-16)+'px"></i></a>';
+      html+='<a class="tl-pin'+(right?" r":"")+'" style="left:'+px+'px;top:'+top+'px"'+(p.url?' href="'+esc(p.url)+'" target="_blank" rel="noopener"':'')+' title="'+esc(p.title+" · due "+whenWords(p.due))+'"><b><small>'+esc(tm(p.due))+'</small> '+esc(label)+'</b><i style="top:16px;height:'+(118-top-16)+'px"></i></a>';
     });
     html+='<div class="tl-now" id="tl-now" style="left:'+x(now)+'px"><span>NOW '+esc(tm(now))+'</span></div>';
     tlStart0=start; tr.style.width=TL.days*SEG+"px"; tr.innerHTML=html;
