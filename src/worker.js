@@ -52,12 +52,17 @@ export default {
 
       if (path === "/auth/google") return googleAuthStart(url, env);
       if (path === "/auth/google/callback") return googleAuthCallback(url, env);
+      if (path === "/auth/spotify") return spotifyAuthStart(url, env);
+      if (path === "/auth/spotify/callback") return spotifyAuthCallback(url, env);
 
       if (path === "/api/canvas") return json(await getCanvas(env, url.searchParams.get("refresh") === "1"));
       if (path === "/api/calendar") return json(await getCalendar(env));
       if (path === "/api/gmail") return json(await getGmail(env));
       if (path === "/api/state") return request.method === "POST" ? postState(request, env) : json(await getState(env));
       if (path === "/api/chat") return request.method === "POST" ? chat(request, env) : json({ error: "POST only" }, 405);
+      if (path === "/api/commute") return json(await getCommute(env, url));
+      if (path === "/api/spotify/now") return json(await spotifyNow(env));
+      if (path === "/api/spotify/control" && request.method === "POST") return json(await spotifyControl(request, env));
 
       // static dashboard
       return env.ASSETS.fetch(request);
@@ -413,7 +418,155 @@ ${data}`;
   return json({ reply: "I did that.", actions });
 }
 
+/* ───────────────────────── live traffic: Google Routes API ─────────────────────────
+   GET /api/commute?arrive=<ISO>  → when to leave home to be at NJIT by `arrive`, with traffic.
+   Needs secrets GOOGLE_MAPS_KEY + HOME_ADDRESS (optional CAMPUS_ADDRESS, MAPS_MONTHLY_CAP).
+   Traffic-aware requests are the "Compute Routes Pro" SKU: 5,000 free a month. Results are cached in KV
+   (10 min when the drive is < 3 h away, 1 h when < 24 h, 3 h otherwise) and a monthly counter stops calling
+   Google at MAPS_MONTHLY_CAP (default 3000), after which the app falls back to the fixed 45-minute drive. */
+const CAMPUS_DEFAULT = "NJIT, 323 Dr Martin Luther King Jr Blvd, Newark, NJ 07102";
+async function routeOnce(env, departAt) {
+  const ck = `maps:calls:${new Date().toISOString().slice(0, 7)}`;
+  const used = Number(await env.STATE.get(ck)) || 0, cap = Number(env.MAPS_MONTHLY_CAP || 3000);
+  if (used >= cap) throw new Error("maps_cap_reached");
+  const body = { origin: { address: env.HOME_ADDRESS }, destination: { address: env.CAMPUS_ADDRESS || CAMPUS_DEFAULT },
+    travelMode: "DRIVE", routingPreference: "TRAFFIC_AWARE_OPTIMAL", trafficModel: "BEST_GUESS" };
+  if (departAt && departAt.getTime() > Date.now() + 60000) body.departureTime = departAt.toISOString();
+  const r = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-goog-api-key": env.GOOGLE_MAPS_KEY, "x-goog-fieldmask": "routes.duration,routes.staticDuration" },
+    body: JSON.stringify(body),
+  });
+  await env.STATE.put(ck, String(used + 1), { expirationTtl: 40 * 86400 });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.routes || !j.routes[0]) throw new Error(`maps_${r.status}${j.error && j.error.status ? "_" + j.error.status : ""}`);
+  const sec = s => Number(String(s || "0").replace("s", "")) || 0;
+  return { sec: sec(j.routes[0].duration), staticSec: sec(j.routes[0].staticDuration) };
+}
+async function getCommute(env, url) {
+  if (!env.GOOGLE_MAPS_KEY || !env.HOME_ADDRESS) return { ok: false, error: "maps_not_configured" };
+  const arrive = new Date(url.searchParams.get("arrive") || "");
+  if (isNaN(arrive)) return { ok: false, error: "bad_arrive" };
+  const ahead = arrive.getTime() - Date.now();
+  if (ahead > 48 * 3600e3) return { ok: false, error: "too_far_ahead" };
+  const key = `commute:${arrive.toISOString().slice(0, 16)}`;
+  const cached = await env.STATE.get(key, "json");
+  if (cached) return Object.assign(cached, { cached: true });
+  try {
+    // Google can't route "arrive by" for driving, so guess a departure, ask, and correct once.
+    let r = await routeOnce(env, new Date(arrive.getTime() - 45 * 60e3));
+    let depart = new Date(arrive.getTime() - r.sec * 1000);
+    if (depart.getTime() > Date.now()) { r = await routeOnce(env, depart); depart = new Date(arrive.getTime() - r.sec * 1000); }
+    let out;
+    if (depart.getTime() <= Date.now()) {            // past the leave time already: how long from right now?
+      const n = await routeOnce(env, null);
+      out = { ok: true, late: true, etaAt: new Date(Date.now() + n.sec * 1000).toISOString(), durationMin: Math.round(n.sec / 60), staticMin: Math.round(n.staticSec / 60) };
+    } else {
+      out = { ok: true, late: false, departAt: depart.toISOString(), durationMin: Math.round(r.sec / 60), staticMin: Math.round(r.staticSec / 60) };
+    }
+    out.ratio = out.staticMin ? +(out.durationMin / out.staticMin).toFixed(2) : 1;
+    out.arriveBy = arrive.toISOString(); out.checkedAt = new Date().toISOString();
+    const ttl = ahead < 3 * 3600e3 ? 600 : ahead < 24 * 3600e3 ? 3600 : 10800;
+    await env.STATE.put(key, JSON.stringify(out), { expirationTtl: ttl });
+    return out;
+  } catch (e) { return { ok: false, error: String(e.message || e) }; }
+}
+
+/* ───────────────────────── Spotify ─────────────────────────
+   Secrets SPOTIFY_CLIENT_ID + SPOTIFY_CLIENT_SECRET (developer.spotify.com app, redirect URI
+   <origin>/auth/spotify/callback). Dev-mode apps need the owner to have Premium (Feb 2026 rules);
+   play/pause/skip need Premium too. Refresh token lives in KV "spotify:refresh_token". */
+const SPOTIFY_SCOPES = "user-read-playback-state user-modify-playback-state user-read-currently-playing user-library-read user-library-modify";
+async function spotifyAuthStart(url, env) {
+  if (!env.SPOTIFY_CLIENT_ID) return html("<p>SPOTIFY_CLIENT_ID secret is not set yet.</p>", 500);
+  const state = crypto.randomUUID();
+  await env.STATE.put(`spotify:state:${state}`, "1", { expirationTtl: 600 });
+  const q = new URLSearchParams({ response_type: "code", client_id: env.SPOTIFY_CLIENT_ID, scope: SPOTIFY_SCOPES, redirect_uri: `${url.origin}/auth/spotify/callback`, state });
+  return Response.redirect(`https://accounts.spotify.com/authorize?${q}`, 302);
+}
+async function spotifyAuthCallback(url, env) {
+  const code = url.searchParams.get("code"), state = url.searchParams.get("state");
+  if (!code) return html(`<p>Spotify returned no code: ${escapeHtml(url.searchParams.get("error") || "unknown")}</p>`, 400);
+  if (!state || !(await env.STATE.get(`spotify:state:${state}`))) return html("<p>That sign-in link expired. Go back and tap Connect Spotify again.</p>", 400);
+  await env.STATE.delete(`spotify:state:${state}`);
+  const tok = await spotifyToken(env, { grant_type: "authorization_code", code, redirect_uri: `${url.origin}/auth/spotify/callback` });
+  if (!tok.refresh_token) return html(`<p>Spotify sign-in failed.</p><pre>${escapeHtml(JSON.stringify(tok, null, 1))}</pre>`, 400);
+  await env.STATE.put("spotify:refresh_token", tok.refresh_token);
+  await env.STATE.put("spotify:access", JSON.stringify({ token: tok.access_token, exp: Date.now() + (tok.expires_in - 60) * 1000 }));
+  return Response.redirect(`${url.origin}/?connected=spotify`, 302);
+}
+async function spotifyToken(env, params) {
+  const r = await fetch("https://accounts.spotify.com/api/token", {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded", authorization: "Basic " + btoa(`${env.SPOTIFY_CLIENT_ID}:${env.SPOTIFY_CLIENT_SECRET}`) },
+    body: new URLSearchParams(params),
+  });
+  return r.json().catch(() => ({}));
+}
+async function spotifyAccess(env) {
+  const c = JSON.parse((await env.STATE.get("spotify:access")) || "null");
+  if (c && c.exp > Date.now()) return c.token;
+  const refresh = await env.STATE.get("spotify:refresh_token");
+  if (!refresh) return null;
+  const tok = await spotifyToken(env, { grant_type: "refresh_token", refresh_token: refresh });
+  if (!tok.access_token) return null;
+  if (tok.refresh_token) await env.STATE.put("spotify:refresh_token", tok.refresh_token);
+  await env.STATE.put("spotify:access", JSON.stringify({ token: tok.access_token, exp: Date.now() + (tok.expires_in - 60) * 1000 }));
+  return tok.access_token;
+}
+async function sfetch(env, path, opts = {}) {
+  const t = await spotifyAccess(env);
+  if (!t) throw new Error("spotify_not_connected");
+  return fetch(`https://api.spotify.com/v1${path}`, Object.assign({}, opts, { headers: Object.assign({ authorization: `Bearer ${t}` }, opts.headers || {}) }));
+}
+async function spotifyNow(env) {
+  if (!env.SPOTIFY_CLIENT_ID || !env.SPOTIFY_CLIENT_SECRET) return { ok: false, error: "spotify_not_configured" };
+  if (!(await env.STATE.get("spotify:refresh_token"))) return { ok: false, error: "spotify_not_connected" };
+  try {
+    const r = await sfetch(env, "/me/player?additional_types=episode");
+    if (r.status === 204) return { ok: true, item: null };
+    if (r.status === 401) { await env.STATE.delete("spotify:access"); return { ok: false, error: "spotify_auth" }; }
+    if (!r.ok) return { ok: false, error: `spotify_${r.status}` };
+    const p = await r.json(), it = p.item;
+    if (!it) return { ok: true, item: null, isPlaying: !!p.is_playing };
+    const imgs = (it.album && it.album.images) || it.images || (it.show && it.show.images) || [];
+    const art = (imgs.slice().sort((a, b) => (a.width || 0) - (b.width || 0)).find(i => (i.width || 0) >= 120) || imgs[0] || {}).url || "";
+    let liked = null;
+    if (it.uri) {
+      const lk = `spotify:liked:${it.uri}`, c = await env.STATE.get(lk);
+      if (c !== null) liked = c === "1";
+      else {
+        const cr = await sfetch(env, `/me/library/contains?uris=${encodeURIComponent(it.uri)}`);
+        if (cr.ok) { const a = await cr.json(); liked = !!a[0]; await env.STATE.put(lk, liked ? "1" : "0", { expirationTtl: 600 }); }
+      }
+    }
+    return {
+      ok: true, isPlaying: !!p.is_playing, progressMs: p.progress_ms || 0, liked,
+      item: { title: it.name, artists: (it.artists || []).map(a => a.name).join(", ") || (it.show && it.show.name) || "", album: (it.album && it.album.name) || "", art, uri: it.uri, durationMs: it.duration_ms || 0, url: (it.external_urls && it.external_urls.spotify) || "" },
+      device: p.device ? { name: p.device.name, type: p.device.type } : null,
+    };
+  } catch (e) { return { ok: false, error: String(e.message || e) }; }
+}
+async function spotifyControl(request, env) {
+  const { action, uri } = await request.json().catch(() => ({}));
+  const map = { play: ["PUT", "/me/player/play"], pause: ["PUT", "/me/player/pause"], next: ["POST", "/me/player/next"], previous: ["POST", "/me/player/previous"] };
+  try {
+    if (action === "like" || action === "unlike") {
+      if (!uri) return { ok: false, error: "no_track" };
+      const r = await sfetch(env, `/me/library?uris=${encodeURIComponent(uri)}`, { method: action === "like" ? "PUT" : "DELETE" });
+      if (r.ok) await env.STATE.put(`spotify:liked:${uri}`, action === "like" ? "1" : "0", { expirationTtl: 600 });
+      return { ok: r.ok, status: r.status };
+    }
+    const m = map[action];
+    if (!m) return { ok: false, error: "bad_action" };
+    const r = await sfetch(env, m[1], { method: m[0] });
+    if (r.status === 403) return { ok: false, error: "premium_required" };
+    if (r.status === 404) return { ok: false, error: "no_active_device" };
+    return { ok: r.ok, status: r.status };
+  } catch (e) { return { ok: false, error: String(e.message || e) }; }
+}
+
 function escapeHtml(s) { return String(s).replace(/[&<>"]/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m])); }
 
 // named exports for tests
-export { getCanvas, shortCode, getState, postState };
+export { getCanvas, shortCode, getState, postState, getCommute, spotifyNow };
