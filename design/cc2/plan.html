@@ -1,0 +1,503 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Command Center 2.0</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gilda+Display&family=Petrona:wght@400&family=Rosarivo&family=Instrument+Serif&family=Cormorant+Garamond:wght@500;600&family=Newsreader:opsz,wght@6..72,400&family=Urbanist:wght@300;400;500;600&family=Poppins:wght@300;400;500&family=Sora:wght@300;400;500&family=Outfit:wght@300;400;500&family=Manrope:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    color-scheme:dark;
+    --k:#000; --bg:#050505; --panel:#0b0b0b; --line:#262626;
+    --ink:#F2F2F2; --ink2:#BDBDBD; --muted:#8a8a8a; --faint:#555;
+    --o:#FF4D00; --y:#FFCD1A; --g:#00FF9B;
+    --glass:rgba(255,255,255,.09); --glass2:rgba(255,255,255,.16); --rim:rgba(255,255,255,.2);
+    --sans:"Outfit",ui-sans-serif,system-ui,-apple-system,sans-serif;
+    --serif:"Petrona","Iowan Old Style",Georgia,serif; --ss:1;
+    --mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    --spring:cubic-bezier(.3,1.3,.4,1);
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  [hidden]{display:none!important}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5}
+  .wrap{max-width:1400px;margin:0 auto;padding-inline:20px;padding-block:32px 72px;display:flex;flex-direction:column;gap:44px}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  h1{margin:10px 0 0;font-family:var(--serif);font-weight:var(--sw,400);font-size:calc(clamp(40px,6.4vw,80px) * var(--ss));letter-spacing:-.025em;line-height:.95;text-wrap:balance;max-width:14ch}
+  h1 em{font-style:normal;color:var(--o)}
+  h2{margin:0;font-family:var(--serif);font-weight:var(--sw,400);font-size:calc(clamp(26px,3.2vw,38px) * var(--ss));letter-spacing:-.015em;line-height:1.05;text-wrap:balance}
+  h3{margin:0;font-weight:500;font-size:16px;letter-spacing:-.02em}
+  p{margin:0}
+  .lede{margin-top:16px;color:var(--ink2);max-width:62ch;font-size:16px}
+  section{display:flex;flex-direction:column;gap:18px}
+  .sub{color:var(--ink2);max-width:62ch}
+
+  /* light switch */
+  .ctl{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .ctl .lab{width:118px;flex:none;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .seg{display:inline-flex;flex-wrap:wrap;gap:4px;padding:4px;border-radius:999px;background:#111;border:1px solid var(--line)}
+  .seg button{font:500 13px var(--sans);color:var(--muted);background:none;border:0;border-radius:999px;padding:7px 14px;cursor:pointer}
+  .seg button[aria-pressed="true"]{background:var(--ink);color:#000}
+  .seg button:focus-visible,.dk button:focus-visible,.cta:focus-visible{outline:2px solid var(--o);outline-offset:2px}
+
+  /* ── phones ── */
+  .phones{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:34px 20px;justify-items:center}
+  .shot{display:flex;flex-direction:column;gap:14px;width:320px;max-width:100%}
+  .cap{display:flex;flex-direction:column;gap:4px}
+  .cap .n{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--o)}
+  .cap p{color:var(--ink2);font-size:14px}
+  .ph{--gx:78%;--gy:20%;--gs:1;--ga:.55;position:relative;width:320px;max-width:100%;height:692px;border-radius:46px;background:#000;overflow:hidden;isolation:isolate;
+      box-shadow:0 0 0 1px #1d1d1d,0 0 0 7px #0c0c0c,0 0 0 8px #262626,0 30px 60px rgba(0,0,0,.6)}
+  /* the one light: its size and strength follow how urgent things are; it drifts slowly, one loop every ~26 s */
+  @property --dx{syntax:"<percentage>";inherits:true;initial-value:0%}
+  @property --dy{syntax:"<percentage>";inherits:true;initial-value:0%}
+  .ph{animation:drift 26s ease-in-out infinite alternate}
+  .shot:nth-child(2) .ph{animation-delay:-7s} .shot:nth-child(3) .ph{animation-delay:-14s} .shot:nth-child(4) .ph{animation-delay:-20s}
+  @keyframes drift{0%{--dx:0%;--dy:0%}30%{--dx:-7%;--dy:5%}65%{--dx:5%;--dy:9%}100%{--dx:-4%;--dy:-3%}}
+  /* start-up: the light ignites while the counter runs, then the screen rises in */
+  .bootov{position:absolute;inset:0;z-index:20;background:#000;display:flex;align-items:flex-end;justify-content:space-between;padding:0 22px 30px;pointer-events:none}
+  .bootov .bn{font-family:var(--serif);font-size:calc(28px * var(--ss));letter-spacing:-.02em;line-height:1}
+  .bootov .bn span{color:var(--o)}
+  .bootov .bp{font-family:var(--mono);font-size:12px;color:rgba(255,255,255,.6);font-variant-numeric:tabular-nums}
+  .bootov .spark{position:absolute;left:50%;top:44%;width:6px;height:6px;margin:-3px;border-radius:50%;background:#ffb070;box-shadow:0 0 18px 6px rgba(255,77,0,.8)}
+  .glow{position:absolute;inset:-20%;z-index:0;pointer-events:none;
+    background:radial-gradient(calc(260px * var(--gs)) calc(300px * var(--gs)) at calc(var(--gx) + var(--dx)) calc(var(--gy) + var(--dy)),rgba(255,150,70,var(--ga)),rgba(255,77,0,calc(var(--ga) * .8)) 30%,rgba(120,28,0,calc(var(--ga) * .55)) 58%,transparent 80%);
+}
+  .dots{position:absolute;inset:-20%;z-index:0;pointer-events:none;opacity:calc(var(--ga) * 1.1);
+    background:radial-gradient(circle,rgba(255,140,60,.7) .75px,transparent 1.15px) 0 0/4px 4px;
+    -webkit-mask-image:radial-gradient(calc(300px * var(--gs)) calc(340px * var(--gs)) at calc(var(--gx) + var(--dx)) calc(var(--gy) + var(--dy)),transparent 40%,#000 58%,transparent 82%);
+            mask-image:radial-gradient(calc(300px * var(--gs)) calc(340px * var(--gs)) at calc(var(--gx) + var(--dx)) calc(var(--gy) + var(--dy)),transparent 40%,#000 58%,transparent 82%)}
+  .shade{position:absolute;left:0;right:0;bottom:0;height:46%;z-index:0;background:linear-gradient(transparent,rgba(0,0,0,.72) 55%,#000)}
+  .phones[data-l="calm"] .ph{--ga:.32;--gs:.8}
+  .phones[data-l="soon"] .ph{--ga:.6;--gs:1}
+  .phones[data-l="now"] .ph{--ga:.9;--gs:1.3}
+  .phones[data-l="now"] .glow{animation:breathe 7s ease-in-out infinite}
+  @keyframes breathe{50%{opacity:.8;transform:scale(1.04)}}
+  .glow,.dots{transition:opacity .8s}
+  .ph > .in{position:absolute;inset:0;z-index:1;display:flex;flex-direction:column;padding:0 18px}
+  .sb{height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 10px;font:600 13px var(--sans);flex:none}
+  .isl{position:absolute;left:50%;top:10px;width:96px;height:28px;margin-left:-48px;border-radius:20px;background:#000;z-index:5}
+  .sig{display:flex;gap:5px;align-items:center}
+  .sig i{display:block;width:3px;background:#fff;border-radius:1px}
+  .bat{width:22px;height:11px;border:1px solid rgba(255,255,255,.6);border-radius:3px;padding:1px}
+  .bat b{display:block;height:100%;width:70%;background:#fff;border-radius:1px}
+
+  /* components */
+  .gc{width:42px;height:42px;border-radius:50%;flex:none;display:grid;place-items:center;border:0;color:#fff;cursor:pointer;padding:0;
+      background:var(--glass);-webkit-backdrop-filter:blur(14px) saturate(1.5);backdrop-filter:blur(14px) saturate(1.5);
+      box-shadow:inset 0 0 0 1px var(--rim),inset 0 1px 0 rgba(255,255,255,.3),0 8px 20px rgba(0,0,0,.25);font:500 12px var(--mono)}
+  .gc svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+  .gc.art{background:linear-gradient(135deg,#ff4d00,#3b1d6e);box-shadow:inset 0 0 0 1px rgba(255,255,255,.3),0 8px 20px rgba(0,0,0,.3)}
+  .tag{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 11px;border-radius:999px;font-size:12px;color:#fff;
+       background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.28);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+  .tag.m{font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--o);flex:none}
+  .dot.g{background:var(--g)} .dot.y{background:var(--y)}
+  .pill{display:flex;align-items:center;gap:10px;min-height:46px;padding:9px 16px;border-radius:24px;
+        background:var(--glass);-webkit-backdrop-filter:blur(16px) saturate(1.4);backdrop-filter:blur(16px) saturate(1.4);
+        box-shadow:inset 0 0 0 1px rgba(255,255,255,.12),inset 0 1px 0 rgba(255,255,255,.16)}
+  .pill .t{flex:1;min-width:0;display:flex;flex-direction:column}
+  .pill .t b{font-weight:500;font-size:15px;letter-spacing:-.005em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pill .t span{font-family:var(--mono);font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+  .pill .v{font-family:var(--mono);font-size:12px;color:#fff;flex:none}
+  .pill .v.o{color:var(--o)}
+  /* progress pill = the reference's volume slider, used for partly-done homework */
+  .pp{position:relative;display:flex;align-items:center;min-height:46px;padding:0 16px;border-radius:24px;overflow:hidden;
+      background:rgba(255,255,255,.06);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}
+  .pp .fill{position:absolute;left:0;top:0;bottom:0;width:var(--p);border-radius:24px;background:rgba(255,255,255,.17);
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.28),inset 0 1px 0 rgba(255,255,255,.35)}
+  .pp .fill::after{content:"";position:absolute;right:14px;top:50%;width:2px;height:16px;margin-top:-8px;background:#fff;border-radius:1px}
+  .pp .l{position:relative;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:55%}
+  .pp .ticks{position:absolute;left:50%;right:56px;top:50%;display:flex;justify-content:space-between;transform:translateY(-50%)}
+  .pp .ticks i{width:3px;height:3px;border-radius:50%;background:rgba(255,255,255,.4)}
+  .pp .r{position:relative;margin-left:auto;font-family:var(--mono);font-size:12px}
+  .cta{align-self:flex-start;display:inline-flex;align-items:center;gap:8px;height:42px;padding:0 20px;border-radius:999px;background:#fff;color:#000;font:500 14px var(--sans);border:0;cursor:pointer}
+  .cta svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8}
+  .chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{flex:none;height:32px;padding:0 13px;border-radius:999px;display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:rgba(255,255,255,.85);
+        background:var(--glass);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+  .chip.on{background:#fff;color:#000;box-shadow:none}
+  .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.5)}
+  .stack{display:flex;flex-direction:column;gap:7px}
+
+  /* fused circles (the dock and the media controls): one soft blob behind glass discs */
+  .fuse{position:relative;flex:none}
+  .fuse svg.blob{position:absolute;inset:-6px;width:calc(100% + 12px);height:calc(100% + 12px);overflow:visible;opacity:.13}
+  .fuse .row{position:relative;display:flex;gap:6px}
+  .fuse .b{position:relative;width:54px;height:54px;border-radius:50%;display:grid;place-items:center;border:0;padding:0;cursor:pointer;color:#fff;
+      background:rgba(255,255,255,.1);-webkit-backdrop-filter:blur(14px) saturate(1.5);backdrop-filter:blur(14px) saturate(1.5);
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.22),inset 0 1px 0 rgba(255,255,255,.34),0 8px 18px rgba(0,0,0,.22);transition:color .25s;z-index:2}
+  .fuse .b svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;position:relative;z-index:2}
+  .fuse .b.fillsvg svg{fill:currentColor;stroke:none}
+  .fuse .b[aria-current="page"],.fuse .b.solid{color:#000}
+  .fuse .knob{position:absolute;top:0;left:0;width:54px;height:54px;border-radius:50%;background:#fff;z-index:1;pointer-events:none;
+      transform:translateX(var(--kx,0px));transition:transform .5s var(--spring);box-shadow:0 8px 20px rgba(0,0,0,.3)}
+  .fuse .b.solid{background:#fff;box-shadow:0 8px 20px rgba(0,0,0,.3)}
+  .fuse .bd{position:absolute;top:9px;right:10px;width:8px;height:8px;border-radius:50%;background:var(--o);box-shadow:0 0 0 2px #000;z-index:3}
+  .dockwrap{position:absolute;left:0;right:0;bottom:22px;display:flex;justify-content:center;z-index:4}
+  .fuse.sm .b{width:48px;height:48px} .fuse.sm .b.big{width:58px;height:58px;margin-block:-5px}
+
+  /* split-flap (kept from today) */
+  .flap{display:flex;gap:2px;flex-wrap:wrap}
+  .flap i{font-style:normal;font-family:var(--mono);font-size:11.5px;width:14px;height:19px;display:grid;place-items:center;background:#0d0d0d;color:var(--g);border-radius:2px}
+  .board{padding:12px 12px 10px;border-radius:20px;background:rgba(0,0,0,.55);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+  .board .bh{display:flex;justify-content:space-between;margin-bottom:8px;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+  .board .bh b{color:var(--y);font-weight:500}
+  .board .bm{display:flex;justify-content:space-between;margin-top:5px;font-family:var(--mono);font-size:9.5px;letter-spacing:.04em;text-transform:uppercase;color:rgba(255,255,255,.5)}
+  .board .bm b{color:var(--g);font-weight:500}
+
+  /* schedule rail */
+  .rail{position:relative;display:flex;flex-direction:column;gap:8px;padding-left:46px}
+  .rail::before{content:"";position:absolute;left:36px;top:6px;bottom:6px;width:1px;background:rgba(255,255,255,.2)}
+  .ev{position:relative}
+  .ev .tm{position:absolute;left:-46px;top:12px;width:30px;text-align:right;font-family:var(--mono);font-size:10.5px;color:rgba(255,255,255,.6)}
+  .ev::before{content:"";position:absolute;left:-13px;top:17px;width:7px;height:7px;border-radius:50%;background:#000;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.6)}
+  .ev.done{opacity:.45}
+  .nowline{position:relative;height:0;margin:2px 0}
+  .nowline::before{content:"";position:absolute;left:-13px;right:0;top:0;height:1px;background:var(--o)}
+  .nowline::after{content:"NOW 1:40";position:absolute;left:-46px;top:-7px;font:500 9.5px var(--mono);letter-spacing:.04em;color:var(--o);background:#000;padding-right:2px}
+  .nowline i{position:absolute;left:-16px;top:-3px;width:7px;height:7px;border-radius:50%;background:var(--o)}
+
+  /* explainer sections */
+  .two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border:1px solid var(--line);border-radius:18px;overflow:hidden}
+  .two > div{padding:20px;display:flex;flex-direction:column;gap:10px}
+  .two > div + div{border-left:1px solid var(--line)}
+  ul.plain{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px}
+  ul.plain li{color:var(--ink2);font-size:14.5px;padding-left:16px;position:relative}
+  ul.plain li::before{content:"";position:absolute;left:0;top:.6em;width:6px;height:6px;border-radius:50%;background:var(--o)}
+  ul.plain.k li::before{background:var(--ink2)}
+  ul.plain b{color:var(--ink);font-weight:500}
+  .sys{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  .card{border:1px solid var(--line);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:12px;background:var(--panel);position:relative;overflow:hidden}
+  .card .demo{position:relative;min-height:110px;border-radius:14px;overflow:hidden;display:flex;align-items:center;justify-content:center;gap:10px;padding:14px;
+       background:radial-gradient(180px 140px at 70% 30%,rgba(255,120,40,.55),rgba(255,77,0,.3) 40%,transparent 75%),#000}
+  .card p{color:var(--ink2);font-size:13.5px}
+  .sw{display:flex;gap:8px;flex-wrap:wrap}
+  .sw span{display:flex;flex-direction:column;gap:6px;font-family:var(--mono);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+  .sw i{width:44px;height:30px;border-radius:9px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+  .steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  .step{border:1px solid var(--line);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:8px}
+  .step .n{font-family:var(--mono);font-size:11px;color:var(--o)}
+  .step p{color:var(--ink2);font-size:13.5px}
+  .step .cut{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+  .lang{border:1px solid var(--line);border-radius:18px;overflow:hidden;display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+  .lang > div{padding:18px;display:flex;flex-direction:column;gap:8px}
+  .lang > div + div{border-left:1px solid var(--line)}
+  .lang .pick{align-self:flex-start;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#000;background:var(--o);padding:2px 7px;border-radius:4px}
+  .lang p{color:var(--ink2);font-size:13.5px}
+  @media (max-width:980px){ .sys,.steps{grid-template-columns:1fr 1fr} .lang{grid-template-columns:1fr} .lang > div + div{border-left:0;border-top:1px solid var(--line)} }
+  @media (max-width:640px){ .two,.sys,.steps{grid-template-columns:1fr} .two > div + div{border-left:0;border-top:1px solid var(--line)} }
+  @media (prefers-reduced-motion:reduce){ .ph{animation:none!important} .glow{animation:none!important} .fuse .knob{transition:none} }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="goo"><feGaussianBlur in="SourceGraphic" stdDeviation="5" result="b"/><feColorMatrix in="b" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -10"/></filter>
+  <symbol id="i-today" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></symbol>
+  <symbol id="i-work" viewBox="0 0 24 24"><path d="M6 3.5h8l4 4v13H6z"/><path d="M9 12.5h6M9 16h4"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M9 3.5v4M15 3.5v4"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><path d="M4 13.5l2.5-8h11l2.5 8v6H4z"/><path d="M4 13.5h5l1 2h4l1-2h5"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M14 6l-6 6 6 6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.6-7 10-7 10z"/></symbol>
+  <symbol id="i-prev" viewBox="0 0 24 24"><path d="M6 5h2.5v14H6zM19 5v14L9 12z"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><path d="M15.5 5H18v14h-2.5zM5 5v14l10-7z"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><rect x="6.5" y="5" width="3.5" height="14" rx="1"/><rect x="14" y="5" width="3.5" height="14" rx="1"/></symbol>
+  <symbol id="i-out" viewBox="0 0 24 24"><path d="M7 17L17 7M9 7h8v8"/></symbol>
+  <symbol id="i-car" viewBox="0 0 24 24"><path d="M5 16V11l2-5h10l2 5v5M5 16h14M7.5 16v2M16.5 16v2"/><circle cx="8" cy="13" r=".8"/><circle cx="16" cy="13" r=".8"/></symbol>
+</svg>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Command Center 2.0 · redesign plan · nothing pushed</div>
+    <h1>One light. Four screens. <em>Nothing extra.</em></h1>
+    <p class="lede">Now in your new fonts. What we take from your references: one warm light on a dark stage, soft glass circles fused into a dock, pill-shaped rows, and a single white button that tells you where you are. What we keep: black, orange means "act", Geist Mono for labels, the halftone dots and the departures board. The light isn't decoration either. It gets brighter as things get urgent.</p>
+  </header>
+
+  <section aria-labelledby="s1">
+    <h2 id="s1">The four screens</h2>
+    <div class="ctl"><span class="lab">The light shows urgency</span>
+      <div class="seg" id="light"><button type="button" data-v="calm" aria-pressed="false">Calm day</button><button type="button" data-v="soon" aria-pressed="true">Due soon</button><button type="button" data-v="now" aria-pressed="false">Leave now</button></div>
+      <button type="button" class="cta" id="replay" style="height:36px;padding:0 16px;font-size:13px">Replay start-up</button>
+    </div>
+    <div class="ctl"><span class="lab">Headline font</span>
+      <div class="seg" id="fserif">
+        <button type="button" aria-pressed="false" data-f="Gilda Display" data-s="1" style="font-family:'Gilda Display';font-size:15px">Gilda Display</button>
+        <button type="button" aria-pressed="true" data-f="Petrona" data-s="1" style="font-family:'Petrona';font-size:15px">Petrona</button>
+        <button type="button" aria-pressed="false" data-f="Rosarivo" data-s=".96" style="font-family:'Rosarivo';font-size:15px">Rosarivo</button>
+        <button type="button" aria-pressed="false" data-f="Instrument Serif" data-s="1.12" style="font-family:'Instrument Serif';font-size:16px">Instrument Serif</button>
+        <button type="button" aria-pressed="false" data-f="Cormorant Garamond" data-s="1.1" data-w="600" style="font-family:'Cormorant Garamond';font-weight:600;font-size:16px">Cormorant</button>
+        <button type="button" aria-pressed="false" data-f="Newsreader" data-s="1" style="font-family:'Newsreader';font-size:15px">Newsreader</button>
+      </div></div>
+    <div class="ctl"><span class="lab">Text font</span>
+      <div class="seg" id="fsans">
+        <button type="button" aria-pressed="false" data-f="Urbanist" style="font-family:'Urbanist'">Urbanist</button>
+        <button type="button" aria-pressed="false" data-f="Poppins" style="font-family:'Poppins'">Poppins</button>
+        <button type="button" aria-pressed="false" data-f="Sora" style="font-family:'Sora'">Sora</button>
+        <button type="button" aria-pressed="true" data-f="Outfit" style="font-family:'Outfit'">Outfit</button>
+        <button type="button" aria-pressed="false" data-f="Manrope" style="font-family:'Manrope'">Manrope</button>
+      </div></div>
+    <p class="sub" id="fnote" style="font-size:14px"></p>
+    <div class="phones" id="phones" data-l="soon">
+
+      <!-- 01 TODAY -->
+      <div class="shot">
+        <div class="ph">
+          <div class="glow"></div><div class="dots"></div><div class="shade"></div><div class="isl"></div>
+          <div class="in">
+            <div class="sb"><span>1:40</span><span class="sig"><i style="height:5px"></i><i style="height:7px"></i><i style="height:9px"></i><span class="bat"><b></b></span></span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
+              <span class="lbl">Fri · Sep 25</span>
+              <span style="display:flex;gap:8px"><button class="gc" type="button" aria-label="Weather: 61 degrees, rain at 2 PM">61°</button><button class="gc art" type="button" aria-label="Now playing"></button></span>
+            </div>
+            <p style="margin-top:18px;font-family:var(--serif);font-size:calc(24px * var(--ss));font-weight:400;letter-spacing:-.01em;line-height:1.15"><span style="color:var(--o)">Leave by 7:05.</span> Physics I at 8:30 in Kupfrian 105.</p>
+            <div class="chips" style="margin-top:12px"><span class="chip"><span class="dot"></span>71 min drive</span><span class="chip">Rain 2 PM</span><span class="chip"><span class="dot y"></span>Exam in 10d</span></div>
+            <div style="margin-top:auto;display:flex;flex-direction:column;gap:12px;padding-bottom:10px">
+              <span class="tag m">Next up · PHYS 111A</span>
+              <p style="font-size:calc(34px * var(--ss));font-family:var(--serif);font-weight:var(--sw,400);letter-spacing:-.02em;line-height:1.02">Lab Report 2 is due Tuesday.</p>
+              <p class="lbl" style="color:rgba(255,255,255,.7)">4d 7h left · 100 pts</p>
+              <button class="cta" type="button">Open in Canvas <svg viewBox="0 0 24 24"><use href="#i-out"/></svg></button>
+            </div>
+            <div class="stack" style="margin-bottom:98px">
+              <div class="pill"><span class="dot g"></span><span class="t"><b>White Paper Outline</b><span>ENGL 102 · Wed 8:30 AM</span></span><span class="v">4d</span></div>
+              <div class="pp" style="--p:50%"><span class="fill"></span><span class="l">Ch 3 Homework</span><span class="ticks"><i></i><i></i><i></i><i></i></span><span class="r">5.5/11</span></div>
+            </div>
+          </div>
+          <div class="dockwrap"><div class="fuse" data-dock><div class="row">
+            <button class="b" type="button" aria-label="Today" aria-current="page"><svg><use href="#i-today"/></svg></button>
+            <button class="b" type="button" aria-label="Work, 5 open"><svg><use href="#i-work"/></svg><span class="bd"></span></button>
+            <button class="b" type="button" aria-label="Schedule"><svg><use href="#i-cal"/></svg></button>
+            <button class="b" type="button" aria-label="Inbox, 3 unread"><svg><use href="#i-mail"/></svg><span class="bd"></span></button>
+          </div></div></div>
+        </div>
+        <div class="cap"><span class="n">01 · Today</span><p>Three answers, top to bottom: when to leave, what's due next, what's after that. The dock has no labels, and tapping a circle slides the white knob.</p></div>
+      </div>
+
+      <!-- 02 WORK -->
+      <div class="shot">
+        <div class="ph" style="--gx:20%;--gy:4%">
+          <div class="glow"></div><div class="dots"></div><div class="shade"></div><div class="isl"></div>
+          <div class="in">
+            <div class="sb"><span>1:40</span><span class="sig"><i style="height:5px"></i><i style="height:7px"></i><i style="height:9px"></i><span class="bat"><b></b></span></span></div>
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-top:14px">
+              <p style="font-size:calc(34px * var(--ss));font-family:var(--serif);font-weight:var(--sw,400);letter-spacing:-.02em;line-height:1">Work</p><span class="lbl" style="padding-bottom:4px">16 open · 0 late</span>
+            </div>
+            <div class="board" style="margin-top:14px">
+              <div class="bh"><b>Departures</b><span style="color:rgba(255,255,255,.5)">next out</span></div>
+              <div class="flap" id="flap"></div>
+              <div class="bm"><span>Tue 11:59 PM · PHYS 111A</span><b>On track</b></div>
+            </div>
+            <div class="chips" style="margin-top:14px"><span class="chip on">Due soon</span><span class="chip">This week</span><span class="chip">Later</span><span class="chip">Done</span></div>
+            <div class="stack" style="margin-top:14px">
+              <span class="lbl">Wednesday</span>
+              <div class="pill"><span class="dot g"></span><span class="t"><b>White Paper Outline</b><span>ENGL 102 · 8:30 AM</span></span><span class="v">4d</span></div>
+              <div class="pp" style="--p:50%"><span class="fill"></span><span class="l">Ch 3 Homework</span><span class="ticks"><i></i><i></i><i></i><i></i></span><span class="r">5.5/11</span></div>
+              <div class="pill"><span class="dot g"></span><span class="t"><b>Homework 04</b><span>CS 100 · 11:59 PM · 70 pts</span></span><span class="v">5d</span></div>
+              <span class="lbl" style="margin-top:4px">Thursday</span>
+              <div class="pill"><span class="dot"></span><span class="t"><b>Calc II Quiz (8.1, 8.2)</b><span>Math 112 · all day · exam</span></span><span class="v o">6d</span></div>
+            </div>
+          </div>
+          <div class="dockwrap"><div class="fuse" data-dock data-start="1"><div class="row">
+            <button class="b" type="button" aria-label="Today"><svg><use href="#i-today"/></svg></button>
+            <button class="b" type="button" aria-label="Work, 5 open" aria-current="page"><svg><use href="#i-work"/></svg></button>
+            <button class="b" type="button" aria-label="Schedule"><svg><use href="#i-cal"/></svg></button>
+            <button class="b" type="button" aria-label="Inbox, 3 unread"><svg><use href="#i-mail"/></svg><span class="bd"></span></button>
+          </div></div></div>
+        </div>
+        <div class="cap"><span class="n">02 · Work (and Inbox, same layout)</span><p>The departures board stays as the signature and shows the next thing out. Everything else is pill rows grouped by day. Partly done homework is a slider pill, so you can see 5.5/11 at a glance.</p></div>
+      </div>
+
+      <!-- 03 SCHEDULE -->
+      <div class="shot">
+        <div class="ph" style="--gx:85%;--gy:92%">
+          <div class="glow"></div><div class="dots"></div><div class="isl"></div>
+          <div class="in">
+            <div class="sb"><span>1:40</span><span class="sig"><i style="height:5px"></i><i style="height:7px"></i><i style="height:9px"></i><span class="bat"><b></b></span></span></div>
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-top:14px">
+              <p style="font-size:calc(34px * var(--ss));font-family:var(--serif);font-weight:var(--sw,400);letter-spacing:-.02em;line-height:1">Schedule</p><span class="lbl" style="padding-bottom:4px">2 classes left</span>
+            </div>
+            <div class="chips" style="margin-top:14px"><span class="chip on">Fri 25</span><span class="chip">Mon 28</span><span class="chip">Tue 29</span><span class="chip">Wed 30</span></div>
+            <div class="rail" style="margin-top:18px">
+              <div class="ev done"><span class="tm">7:05</span><div class="pill"><svg width="16" height="16" style="fill:none;stroke:#fff;stroke-width:1.5;flex:none"><use href="#i-car"/></svg><span class="t"><b>Drove to NJIT</b><span>71 min with traffic</span></span></div></div>
+              <div class="ev done"><span class="tm">8:30</span><div class="pill"><span class="t"><b>Roadmap to Computing</b><span>CS 100 · Kupfrian 203</span></span></div></div>
+              <div class="nowline"><i></i></div>
+              <div class="ev"><span class="tm" style="color:#fff">2:30</span><div class="pill" style="box-shadow:inset 0 0 0 1px rgba(255,255,255,.3),inset 0 1px 0 rgba(255,255,255,.2)"><span class="t"><b>Calculus II</b><span>Math 112 · Kupfrian 207 · in 50 min</span></span></div></div>
+              <div class="ev"><span class="tm">4:00</span><div class="pill"><span class="t"><b>Physics I</b><span>Phys 111 · Kupfrian 211</span></span></div></div>
+              <div class="ev"><span class="tm">5:20</span><div class="pill"><svg width="16" height="16" style="fill:none;stroke:#fff;stroke-width:1.5;flex:none"><use href="#i-car"/></svg><span class="t"><b>Head home</b><span>~55 min right now</span></span></div></div>
+              <span class="lbl" style="margin:6px 0 0 -46px">Monday</span>
+              <div class="ev"><span class="tm">all day</span><div class="pill"><span class="dot"></span><span class="t"><b>Calc II HW due</b><span>8.1, 8.2</span></span></div></div>
+            </div>
+          </div>
+          <div class="dockwrap"><div class="fuse" data-dock data-start="2"><div class="row">
+            <button class="b" type="button" aria-label="Today"><svg><use href="#i-today"/></svg></button>
+            <button class="b" type="button" aria-label="Work, 5 open"><svg><use href="#i-work"/></svg><span class="bd"></span></button>
+            <button class="b" type="button" aria-label="Schedule" aria-current="page"><svg><use href="#i-cal"/></svg></button>
+            <button class="b" type="button" aria-label="Inbox, 3 unread"><svg><use href="#i-mail"/></svg><span class="bd"></span></button>
+          </div></div></div>
+        </div>
+        <div class="cap"><span class="n">03 · Schedule</span><p>One thin rail like your reference's timeline, with the orange "now" line. The drives are on it too, so the commute is part of your day instead of a separate chip.</p></div>
+      </div>
+
+      <!-- 04 NOW PLAYING -->
+      <div class="shot">
+        <div class="ph" style="--gx:50%;--gy:30%">
+          <div class="glow" style="background:radial-gradient(calc(280px * var(--gs)) calc(320px * var(--gs)) at calc(50% + var(--dx)) calc(30% + var(--dy)),rgba(255,110,60,var(--ga)),rgba(160,40,120,calc(var(--ga) * .7)) 42%,rgba(40,10,60,calc(var(--ga) * .6)) 64%,transparent 82%)"></div><div class="dots"></div><div class="shade"></div><div class="isl"></div>
+          <div class="in">
+            <div class="sb"><span>1:40</span><span class="sig"><i style="height:5px"></i><i style="height:7px"></i><i style="height:9px"></i><span class="bat"><b></b></span></span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
+              <button class="gc" type="button" aria-label="Close"><svg><use href="#i-down"/></svg></button>
+              <span class="lbl" style="color:rgba(255,255,255,.75)">Now playing</span>
+              <button class="gc" type="button" aria-label="Like"><svg><use href="#i-heart"/></svg></button>
+            </div>
+            <div style="margin:22px auto 0;width:190px;height:190px;border-radius:22px;background:linear-gradient(135deg,#ff4d00,#3b1d6e);box-shadow:0 30px 60px rgba(0,0,0,.45),inset 0 0 0 1px rgba(255,255,255,.18)"></div>
+            <div style="margin-top:auto;display:flex;flex-direction:column;gap:10px;padding-bottom:12px">
+              <span class="tag">Jeremy's iPhone</span>
+              <p style="font-size:calc(34px * var(--ss));font-family:var(--serif);font-weight:var(--sw,400);letter-spacing:-.02em;line-height:1">Nights</p>
+              <p class="lbl" style="color:rgba(255,255,255,.65)">Frank Ocean · Blonde</p>
+              <div class="pp" style="--p:34%;margin-top:6px"><span class="fill"></span><span class="l" style="font-family:var(--mono);font-size:12px">1:38</span><span class="ticks"><i></i><i></i><i></i><i></i></span><span class="r">5:07</span></div>
+              <div class="pp" style="--p:54%"><span class="fill"></span><span class="l">Volume</span><span class="ticks"><i></i><i></i><i></i><i></i></span><span class="r">54</span></div>
+            </div>
+            <div style="display:flex;justify-content:center;margin-bottom:28px">
+              <div class="fuse sm" data-media><div class="row">
+                <button class="b fillsvg" type="button" aria-label="Previous"><svg><use href="#i-prev"/></svg></button>
+                <button class="b big solid fillsvg" type="button" aria-label="Pause"><svg><use href="#i-play"/></svg></button>
+                <button class="b fillsvg" type="button" aria-label="Next"><svg><use href="#i-next"/></svg></button>
+              </div></div>
+            </div>
+          </div>
+        </div>
+        <div class="cap"><span class="n">04 · Now playing (a sheet, not a bar)</span><p>Spotify moves off the screen into the album circle on Today. Tap it and this sheet slides up with your reference's fused controls. The light takes the album's colors here, and only here.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="s2">
+    <h2 id="s2">What stays, what goes</h2>
+    <div class="two">
+      <div>
+        <h3>Kept, because it's you</h3>
+        <ul class="plain k">
+          <li><b>Black stage, orange means "act".</b> Orange shows up only for leave, due soon and the light.</li>
+          <li><b>Geist Mono.</b> Labels, times and countdowns stay in small mono caps. That keeps the basement voice next to the new serif.</li>
+          <li><b>Halftone dots.</b> They now make up the edge of the light, so the glow reads as printed, not like a stock gradient.</li>
+          <li><b>The departures board.</b> One board on Work for the next thing out. It flips only when that thing changes.</li>
+          <li><b>The now sentence, live traffic, Canvas scores, weather and Spotify.</b> All the data stays; it just lives in fewer places.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Changed or gone</h3>
+        <ul class="plain">
+          <li><b>Boxes and hairline grids become glass pills.</b> Rows float on the dark instead of sitting in bordered panels.</li>
+          <li><b>The labeled dock becomes four fused circles</b> with a white knob. Badges become one orange dot.</li>
+          <li><b>The Spotify bar goes away.</b> It's an album circle up top that opens a sheet.</li>
+          <li><b>The weather sky and the moving glass effects go away.</b> The light does that job now.</li>
+          <li><b>The summary line and the timeline on Today go away.</b> They repeated Work and Schedule.</li>
+          <li><b>New type.</b> Petrona for headlines and Outfit for text and buttons, your picks. Geist goes.</li>
+          <li><b>Start-up.</b> Same idea as today's loading screen: the counter runs while the light ignites, then the screen rises in piece by piece. Once per session.</li>
+          <li><b>The light drifts.</b> It moves slowly around the screen, one loop about every half minute. That's the only thing moving on its own.</li>
+          <li><b>Motion drops to a short list:</b> the slow drift, the light breathing on "leave now", the knob sliding, and the board flipping on a change.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="s3">
+    <h2 id="s3">The kit: six pieces build every screen</h2>
+    <div class="sys">
+      <div class="card"><div class="demo"><button class="gc" type="button" aria-label="Example glass circle"><svg><use href="#i-mic"/></svg></button><button class="gc art" type="button" aria-label="Example album circle"></button><button class="gc" type="button">61°</button></div><h3>Glass circle</h3><p>For small actions and glanceable info: mic, weather, now playing, back and close.</p></div>
+      <div class="card"><div class="demo"><div class="fuse sm" data-media><div class="row"><button class="b" type="button" aria-label="Example"><svg><use href="#i-today"/></svg></button><button class="b solid" type="button" aria-label="Example"><svg><use href="#i-work"/></svg></button><button class="b" type="button" aria-label="Example"><svg><use href="#i-cal"/></svg></button></div></div></div><h3>Fused circles</h3><p>Used only for groups that go together: the dock and the music controls. White means selected or main.</p></div>
+      <div class="card"><div class="demo" style="flex-direction:column;align-items:stretch"><div class="pill"><span class="dot g"></span><span class="t"><b>Homework 04</b><span>CS 100 · Wed 11:59 PM</span></span><span class="v">5d</span></div></div><h3>Pill row</h3><p>Every list item in the app: a dot for status, the title, one mono line of detail, and the time on the right.</p></div>
+      <div class="card"><div class="demo" style="flex-direction:column;align-items:stretch"><div class="pp" style="--p:50%"><span class="fill"></span><span class="l">Ch 3 Homework</span><span class="ticks"><i></i><i></i><i></i><i></i></span><span class="r">5.5/11</span></div></div><h3>Progress pill</h3><p>Your reference's volume slider, used for anything partly done: homework scores, song position and volume.</p></div>
+      <div class="card"><div class="demo" style="flex-direction:column;align-items:flex-start;gap:10px"><span class="tag m">Next up · PHYS 111A</span><button class="cta" type="button">Open in Canvas <svg viewBox="0 0 24 24"><use href="#i-out"/></svg></button></div><h3>Tag + one white button</h3><p>A tag says what kind of thing this is. There's at most one white button per screen, and it's the thing you'd do next.</p></div>
+      <div class="card"><div class="demo" style="flex-direction:column;align-items:flex-start;gap:12px">
+        <div style="display:flex;align-items:baseline;gap:14px"><span style="font-family:var(--serif);font-size:calc(40px * var(--ss));line-height:1">Aa</span><span style="font-size:30px;font-weight:400;line-height:1">Aa</span><span style="font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:rgba(255,255,255,.7)">LABEL 4D 7H</span></div>
+        <div class="sw"><span><i style="background:#000"></i>Stage</span><span><i style="background:#FF4D00"></i>Act</span><span><i style="background:rgba(255,255,255,.12)"></i>Glass</span><span><i style="background:#F2F2F2"></i>Ink</span><span><i style="background:#00FF9B"></i>Fine</span><span><i style="background:#FFCD1A"></i>Board</span></div>
+      </div><h3>Type, light + palette</h3><p>Petrona for headlines, Outfit for everything you read or tap, Geist Mono for labels and numbers. One light per screen. Where it sits and how strong it is follow urgency: dim on calm days, brighter when something's due within a day, breathing when it's time to leave.</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="s4">
+    <h2 id="s4">Do we need a new language?</h2>
+    <p class="sub">No. Everything on this page is the same HTML and CSS your app already uses. It's written so it works on your iPhone right now, with no refraction required. Here are the options:</p>
+    <div class="lang">
+      <div><span class="pick">my pick</span><h3>Stay on the web app</h3><p>Same code and the same Cloudflare setup. It works on your iPhone, your Mac and claude.ai. It gets about 90% of this look. The only thing missing is Apple's real glass bending, which the redesign doesn't depend on.</p></div>
+      <div><h3>Native iPhone app (SwiftUI)</h3><p>This gets Apple's real Liquid Glass for free. But it's a new language, you'd have to reinstall it every 7 days unless you pay $99 a year for an Apple developer account, the Mac and claude.ai versions go away, and every feature gets rebuilt. It's worth it later only if you want widgets or a Lock Screen countdown.</p></div>
+      <div><h3>Wrap the web app (Capacitor)</h3><p>This makes it feel like an App Store app, but it's still Safari underneath, so it looks exactly like option 1. It's only worth it for push notifications or widgets.</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="s5">
+    <h2 id="s5">Build order (each step gets your OK before the next)</h2>
+    <div class="steps">
+      <div class="step"><span class="n">Step 1</span><h3>Foundations</h3><p>The light, the six kit pieces, and the new type scale, in a test page only. The app doesn't change yet.</p><span class="cut">Removes: nothing yet</span></div>
+      <div class="step"><span class="n">Step 2</span><h3>Dock + Today</h3><p>Fused dock with the knob. Today reduced to the three answers. The album circle and weather circle go up top.</p><span class="cut">Removes: summary line, timeline on Today, weather sky, Spotify bar</span></div>
+      <div class="step"><span class="n">Step 3</span><h3>Work + Inbox</h3><p>Board up top, filter chips, pill rows grouped by day, progress pills for partial homework.</p><span class="cut">Removes: the old bordered panels and grid lines</span></div>
+      <div class="step"><span class="n">Step 4</span><h3>Schedule</h3><p>The rail with the now line, the drives on the rail, and day chips.</p><span class="cut">Removes: separate commute chip on this page</span></div>
+      <div class="step"><span class="n">Step 5</span><h3>Now playing + voice</h3><p>The Spotify sheet with fused controls. The mic becomes a glass circle that opens the same kind of sheet.</p><span class="cut">Removes: the glass experiments from round 10</span></div>
+      <div class="step"><span class="n">Step 6</span><h3>Mac layout</h3><p>The same kit in two columns: Today on the left, Work and Schedule on the right, and the dock centered at the bottom.</p><span class="cut">Then one push, with a test on your phone first</span></div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  var REDUCED=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // fused blob behind each group of circles
+  function blob(f){
+    var btns=[].slice.call(f.querySelectorAll(".b")); if(!btns.length) return;
+    var fr=f.getBoundingClientRect(), ns="http://www.w3.org/2000/svg", svg=document.createElementNS(ns,"svg"), g=document.createElementNS(ns,"g");
+    svg.setAttribute("class","blob"); svg.setAttribute("aria-hidden","true"); g.setAttribute("filter","url(#goo)"); g.setAttribute("fill","#fff");
+    var W=fr.width+12, H=fr.height+12; svg.setAttribute("viewBox","0 0 "+W+" "+H);
+    var xs=[];
+    btns.forEach(function(b){ var r=b.getBoundingClientRect(), cx=r.left-fr.left+r.width/2+6, cy=r.top-fr.top+r.height/2+6; xs.push(cx);
+      var c=document.createElementNS(ns,"circle"); c.setAttribute("cx",cx); c.setAttribute("cy",cy); c.setAttribute("r",r.width/2+5); g.appendChild(c); });
+    var bar=document.createElementNS(ns,"rect"); bar.setAttribute("x",xs[0]); bar.setAttribute("width",xs[xs.length-1]-xs[0]); bar.setAttribute("y",H/2-H*.26); bar.setAttribute("height",H*.52); g.appendChild(bar);
+    svg.appendChild(g); f.insertBefore(svg,f.firstChild);
+  }
+  [].forEach.call(document.querySelectorAll(".fuse"),blob);
+  // the dock knob slides to the tapped circle
+  [].forEach.call(document.querySelectorAll("[data-dock]"),function(f){
+    var row=f.querySelector(".row"), btns=[].slice.call(row.querySelectorAll(".b")), knob=document.createElement("span"); knob.className="knob"; knob.setAttribute("aria-hidden","true"); row.insertBefore(knob,row.firstChild);
+    function go(i){ knob.style.setProperty("--kx",(btns[i].offsetLeft)+"px"); btns.forEach(function(b,j){ if(j===i) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); }); }
+    btns.forEach(function(b,i){ b.addEventListener("click",function(){ go(i); }); });
+    knob.style.transition="none"; go(Number(f.dataset.start||0)); requestAnimationFrame(function(){ requestAnimationFrame(function(){ knob.style.transition=""; }); });
+  });
+  // departures board, flips once when shown
+  var flap=document.getElementById("flap"), word="LAB REPORT 2", A="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  flap.innerHTML=word.split("").map(function(){ return "<i>&nbsp;</i>"; }).join("");
+  var cells=[].slice.call(flap.children);
+  function settle(){ cells.forEach(function(c,i){ c.textContent=word[i]===" "?" ":word[i]; }); }
+  if(REDUCED) settle(); else { var t=0, iv=setInterval(function(){ t++; cells.forEach(function(c,i){ if(t>6+i*1.2) c.textContent=word[i]===" "?" ":word[i]; else c.textContent=A[(Math.random()*A.length)|0]; }); if(t>6+cells.length*1.2){ clearInterval(iv); settle(); } },55); }
+  // font picker: every headline and text on the page follows it
+  var NOTES={"Gilda Display":"Closest to your reference: soft flared strokes, calm and expensive.","Petrona":"Sturdier and more bookish. Reads well small, a bit less fashion.","Rosarivo":"Classic and airy with long strokes, like a magazine masthead.","Instrument Serif":"Tall and narrow. More editorial and louder, the trendiest of the six.","Cormorant":"Sharp and high-fashion. Beautiful big, but thin, so it needs larger sizes.","Newsreader":"Newspaper serif. Neutral and very legible, the least \"designed\" feel.",
+    "Urbanist":"Clean geometric, closest to the reference's small text.","Poppins":"Rounder and friendlier. Very common, so less distinctive.","Sora":"Wide and techy. Pairs well with the mono labels.","Outfit":"Tight geometric with a modern app feel.","Manrope":"More neutral and compact. The most readable in long lists."};
+  var root=document.documentElement, fnote=document.getElementById("fnote"), cur={s:"Petrona",t:"Outfit"};
+  function note(){ fnote.textContent=cur.s+": "+NOTES[cur.s==="Cormorant Garamond"?"Cormorant":cur.s]+"  ·  "+cur.t+": "+NOTES[cur.t]; }
+  function pick(id,fn){ var host=document.getElementById(id); host.addEventListener("click",function(e){ var b=e.target.closest("button"); if(!b) return; [].forEach.call(host.querySelectorAll("button"),function(x){ x.setAttribute("aria-pressed",String(x===b)); }); fn(b); }); }
+  pick("fserif",function(b){ cur.s=b.dataset.f; root.style.setProperty("--serif",'"'+b.dataset.f+'",Georgia,serif'); root.style.setProperty("--ss",b.dataset.s||"1"); root.style.setProperty("--sw",b.dataset.w||"400"); note(); });
+  pick("fsans",function(b){ cur.t=b.dataset.f; root.style.setProperty("--sans",'"'+b.dataset.f+'",ui-sans-serif,system-ui,sans-serif'); note(); });
+  note();
+  // start-up sequence (the real app runs it once per session, like today)
+  function boot(ph){
+    if(ph._booting) return; ph._booting=true;
+    var ov=document.createElement("div"); ov.className="bootov"; ov.setAttribute("aria-hidden","true");
+    ov.innerHTML='<i class="spark"></i><div class="bn">Command Center<span>.</span></div><div class="bp">0%</div>'; ph.appendChild(ov);
+    var glow=ph.querySelectorAll(".glow,.dots"), bp=ov.querySelector(".bp"), spark=ov.querySelector(".spark"), D=REDUCED?300:1100, t0=performance.now();
+    (function tick(now){ var k=Math.min(1,(now-t0)/D); bp.textContent=Math.round((1-Math.pow(1-k,3))*100)+"%"; if(k<1) requestAnimationFrame(tick); })(t0);
+    if(REDUCED){ setTimeout(function(){ ov.remove(); ph._booting=false; },D); return; }
+    spark.animate([{transform:"scale(.2)",opacity:0},{transform:"scale(1)",opacity:1,offset:.35},{transform:"scale(26)",opacity:0}],{duration:D,easing:"cubic-bezier(.5,0,.2,1)",fill:"forwards"});
+    [].forEach.call(glow,function(g){ g.animate([{opacity:0,transform:"scale(.35)"},{opacity:0,transform:"scale(.35)",offset:.45},{opacity:1,transform:"scale(1)"}],{duration:D+700,easing:"cubic-bezier(.2,.7,.2,1)"}); });
+    ov.animate([{opacity:1},{opacity:1,offset:.7},{opacity:0}],{duration:D+250,fill:"forwards"}).onfinish=function(){ ov.remove(); ph._booting=false; };
+    var parts=[].slice.call(ph.querySelectorAll(".in > *:not(.sb), .in .stack > *, .in .chips > *, .in .rail > *"));
+    parts=parts.filter(function(el){ return !el.querySelector(".stack,.rail"); });
+    parts.forEach(function(el,i){ el.animate([{opacity:0,transform:"translateY(14px)",filter:"blur(6px)"},{opacity:1,transform:"none",filter:"blur(0)"}],{duration:650,delay:D+i*55,easing:"cubic-bezier(.2,.7,.2,1)",fill:"backwards"}); });
+    [].forEach.call(ph.querySelectorAll(".fuse .b"),function(b,i){ b.animate([{opacity:0,transform:"scale(.5)"},{opacity:1,transform:"scale(1)"}],{duration:600,delay:D+200+i*70,easing:"cubic-bezier(.3,1.4,.4,1)",fill:"backwards"}); });
+  }
+  var PH=[].slice.call(document.querySelectorAll(".ph"));
+  if("IntersectionObserver" in window){ var io=new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting&&!e.target._seen){ e.target._seen=true; boot(e.target); } }); },{threshold:.35}); PH.forEach(function(p){ io.observe(p); }); }
+  else PH.forEach(boot);
+  document.getElementById("replay").addEventListener("click",function(){ PH.forEach(boot); });
+  // light switch
+  var phones=document.getElementById("phones");
+  document.getElementById("light").addEventListener("click",function(e){ var b=e.target.closest("button"); if(!b) return; phones.dataset.l=b.dataset.v;
+    [].forEach.call(this.querySelectorAll("button"),function(x){ x.setAttribute("aria-pressed",String(x===b)); }); });
+})();
+</script>
