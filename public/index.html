@@ -382,14 +382,16 @@
     .tl-head .meta{order:3;width:100%}
     .sumline{gap:8px 14px;padding:12px}
     .foot{display:none}
-    .dock{left:var(--gut);right:var(--gut);transform:none;bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+    /* dock sits just above the home bar (≈22px up on a Face ID iPhone); 10px up where there's no home bar */
+    :root{--dockb:max(10px, calc(env(safe-area-inset-bottom,0px) - 12px))}
+    .dock{left:var(--gut);right:var(--gut);transform:none;bottom:var(--dockb)}
     .dock-pill{flex:1;min-width:0}
     .dock-pill button{flex:1;min-width:0;flex-direction:column;gap:3px;padding:8px 0 7px;font-size:10.5px}
     .dock-pill svg{width:18px;height:18px}
     .dock .n{position:absolute;top:3px;left:calc(50% + 5px);min-width:15px;height:15px;line-height:15px;font-size:9px}
     .dock .mic{width:58px;height:58px}
-    .voice{left:16px;right:16px;width:auto;transform:none;bottom:calc(80px + env(safe-area-inset-bottom,0px));max-height:min(62vh,560px)}
-    .np{left:var(--gut);right:var(--gut);width:auto;transform:none;bottom:calc(80px + env(safe-area-inset-bottom,0px))}
+    .voice{left:16px;right:16px;width:auto;transform:none;bottom:calc(70px + var(--dockb));max-height:min(62vh,560px)}
+    .np{left:var(--gut);right:var(--gut);width:auto;transform:none;bottom:calc(70px + var(--dockb))}
     body.np-on .board > .page{padding-bottom:166px}
     body::after{opacity:calc(var(--grain,.07) * .7)}
     /* the pager runs to the bottom edge of the glass; the dock + Spotify bar float over it */
