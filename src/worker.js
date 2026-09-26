@@ -6,7 +6,8 @@
  *   2. Google OAuth once, then read Calendar + Gmail with the stored refresh token
  *   3. Read Canvas (planner items with submission status), cached 10 min
  *   4. Keep small state: dismissed item ids + voice notes (KV)
- *   5. Optional chat: /api/chat → Anthropic API with two tools (dismiss, note)
+ *   5. Chat: /api/chat → Cloudflare Workers AI (free daily allowance) with two tools (dismiss, note);
+ *      the Anthropic API instead only if ANTHROPIC_API_KEY is set
  *
  * Routes
  *   GET  /login, POST /login, POST /logout
@@ -336,7 +337,7 @@ async function getCanvas(env, force = false) {
 async function getState(env) {
   const ignored = (await env.STATE.get("state:ignored", "json")) || [];
   const notes = (await env.STATE.get("state:notes", "json")) || [];
-  return { ignored, notes, google: !!(await env.STATE.get("google:refresh_token")), chat: !!env.ANTHROPIC_API_KEY };
+  return { ignored, notes, google: !!(await env.STATE.get("google:refresh_token")), chat: !!(env.ANTHROPIC_API_KEY || env.AI) };
 }
 async function postState(request, env) {
   const body = await request.json().catch(() => ({}));
@@ -352,10 +353,24 @@ async function postState(request, env) {
   return json({ ignored, notes });
 }
 
-/* ───────────────────────── chat (optional) ───────────────────────── */
+/* ───────────────────────── chat ─────────────────────────
+   Default: Cloudflare Workers AI (binding AI in wrangler.toml, model CHAT_AI_MODEL). Free up to 10,000 neurons a day; this
+   Worker keeps its own count (KV "ai:neurons:YYYY-MM-DD") and stops at AI_DAILY_NEURONS (default 9,000) so it can never
+   spill into paid usage. Past that, or if Workers AI refuses, the message is saved as a note and Talk says so.
+   If ANTHROPIC_API_KEY is set, the Anthropic API is used instead (paid; off unless that secret exists). */
+// neurons per million tokens, input / output (developers.cloudflare.com/workers-ai/platform/pricing, Sep 2026)
+const AI_RATES = {
+  "@cf/ibm-granite/granite-4.0-h-micro": [1542, 10158],
+  "@cf/qwen/qwen3-30b-a3b-fp8": [4625, 30475],
+  "@cf/zai-org/glm-4.7-flash": [5500, 36400],
+  "@cf/google/gemma-4-26b-a4b-it": [9091, 27273],
+  "@cf/meta/llama-4-scout-17b-16e-instruct": [24545, 77273],
+};
+const AI_DEFAULT_MODEL = "@cf/qwen/qwen3-30b-a3b-fp8";
+const OUT_OF_FREE = "Out of free answers for today — saved as a note.";
 
 async function chat(request, env) {
-  if (!env.ANTHROPIC_API_KEY) return json({ error: "chat_disabled" }, 501);
+  if (!env.ANTHROPIC_API_KEY && !env.AI) return json({ error: "chat_disabled" }, 501);
   const body = await request.json().catch(() => ({}));
   const messages = Array.isArray(body.messages) ? body.messages.slice(-12) : [];
   if (!messages.length) return json({ error: "no messages" }, 400);
@@ -390,8 +405,26 @@ ${data}`;
     { name: "dismiss_item", description: "Hide a Canvas item from the dashboard because it's done, a glitch, or not real. Takes the exact item id from DATA.", input_schema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] } },
   ];
 
-  let convo = messages.map(m => ({ role: m.role === "assistant" ? "assistant" : "user", content: String(m.content || "") }));
   const actions = [];
+  async function runTool(name, input) {
+    try {
+      if (name === "save_note") {
+        const text = String(input?.text || "").trim(); if (!text) throw new Error("empty note");
+        await postState(new Request("http://x", { method: "POST", body: JSON.stringify({ note: text }) }), env);
+        actions.push({ type: "note", text }); return "saved";
+      }
+      if (name === "dismiss_item") {
+        const item = (canvas.items || []).find(x => x.id === String(input?.id));
+        if (!item) throw new Error(`no item with id ${input?.id}`);
+        await postState(new Request("http://x", { method: "POST", body: JSON.stringify({ dismiss: item.id }) }), env);
+        actions.push({ type: "dismiss", id: item.id, title: item.title }); return `dismissed: ${item.title} (${item.course})`;
+      }
+      return "unknown tool";
+    } catch (e) { return `Error: ${e.message}`; }
+  }
+  if (!env.ANTHROPIC_API_KEY) return workersAiChat(env, system, messages, tools, runTool, actions);
+
+  let convo = messages.map(m => ({ role: m.role === "assistant" ? "assistant" : "user", content: String(m.content || "") }));
   for (let round = 0; round < 4; round++) {
     const r = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -406,19 +439,7 @@ ${data}`;
     // run tools, feed results back
     convo.push({ role: "assistant", content: res.content });
     const results = [];
-    for (const tu of toolUses) {
-      let out;
-      try {
-        if (tu.name === "save_note") { await postState(new Request("http://x", { method: "POST", body: JSON.stringify({ note: tu.input.text }) }), env); out = "saved"; actions.push({ type: "note", text: tu.input.text }); }
-        else if (tu.name === "dismiss_item") {
-          const item = (canvas.items || []).find(x => x.id === String(tu.input.id));
-          if (!item) throw new Error(`no item with id ${tu.input.id}`);
-          await postState(new Request("http://x", { method: "POST", body: JSON.stringify({ dismiss: item.id }) }), env);
-          out = `dismissed: ${item.title} (${item.course})`; actions.push({ type: "dismiss", id: item.id, title: item.title });
-        } else out = "unknown tool";
-      } catch (e) { out = `Error: ${e.message}`; }
-      results.push({ type: "tool_result", tool_use_id: tu.id, content: String(out) });
-    }
+    for (const tu of toolUses) results.push({ type: "tool_result", tool_use_id: tu.id, content: String(await runTool(tu.name, tu.input)) });
     convo.push({ role: "user", content: results });
   }
   return json({ reply: "I did that.", actions });
@@ -601,6 +622,47 @@ async function spotifyControl(request, env) {
     if (r.status === 404) return { ok: false, error: "no_active_device" };
     return { ok: r.ok, status: r.status };
   } catch (e) { return { ok: false, error: String(e.message || e) }; }
+}
+
+/* Workers AI path: OpenAI-style messages + tools; up to 3 rounds of tool calls. Counts neurons from the reported token
+   usage (or a length estimate) against the daily budget before and after each call. */
+async function workersAiChat(env, system, messages, tools, runTool, actions) {
+  const model = env.CHAT_AI_MODEL || AI_DEFAULT_MODEL, rate = AI_RATES[model] || [30000, 100000];
+  const budget = Number(env.AI_DAILY_NEURONS || 9000), day = new Date().toISOString().slice(0, 10), key = `ai:neurons:${day}`;
+  const lastUser = String([...messages].reverse().find(m => m.role !== "assistant")?.content || "").trim();
+  async function outOfFree() {
+    if (lastUser) { await postState(new Request("http://x", { method: "POST", body: JSON.stringify({ note: lastUser }) }), env); actions.push({ type: "note", text: lastUser }); }
+    return json({ reply: OUT_OF_FREE, actions, limited: true });
+  }
+  let used = Number(await env.STATE.get(key)) || 0;
+  if (used >= budget) return outOfFree();
+  const oaTools = tools.map(t => ({ type: "function", function: { name: t.name, description: t.description, parameters: t.input_schema } }));
+  const convo = [{ role: "system", content: system }, ...messages.map(m => ({ role: m.role === "assistant" ? "assistant" : "user", content: String(m.content || "") }))];
+  const clean = t => String(t || "").replace(/<think>[\s\S]*?<\/think>/g, "").replace(/^[\s\S]*<\/think>/, "").trim();
+  for (let round = 0; round < 3; round++) {
+    let res;
+    try { res = await env.AI.run(model, { messages: convo, tools: oaTools, max_tokens: 700, temperature: 0.3 }); }
+    catch (e) {
+      const msg = String(e && e.message || e);
+      if (/neuron|allocation|4006|quota|limit|capacity exceeded/i.test(msg)) return outOfFree();
+      return json({ error: `workers_ai: ${msg.slice(0, 160)}` }, 502);
+    }
+    const msgOut = res?.choices?.[0]?.message || {};
+    const u = res?.usage || {}, inTok = u.prompt_tokens ?? Math.ceil(JSON.stringify(convo).length / 4), outTok = u.completion_tokens ?? Math.ceil(JSON.stringify(res || "").length / 4);
+    used += (inTok * rate[0] + outTok * rate[1]) / 1e6;
+    await env.STATE.put(key, String(Math.round(used * 10) / 10), { expirationTtl: 3 * 86400 });
+    const calls = (res?.tool_calls || msgOut.tool_calls || []).map((c, i) => {
+      const fn = c.function || c; let args = fn.arguments ?? c.arguments ?? {};
+      if (typeof args === "string") { try { args = JSON.parse(args || "{}"); } catch { args = {}; } }
+      return { id: c.id || `call_${round}_${i}`, name: fn.name || c.name, args };
+    }).filter(c => c.name);
+    const text = clean(res?.response ?? msgOut.content ?? "");
+    if (!calls.length) return json({ reply: text || "…", actions, model, neuronsToday: Math.round(used) });
+    convo.push({ role: "assistant", content: "", tool_calls: calls.map(c => ({ id: c.id, type: "function", function: { name: c.name, arguments: JSON.stringify(c.args) } })) });
+    for (const c of calls) convo.push({ role: "tool", tool_call_id: c.id, name: c.name, content: String(await runTool(c.name, c.args)) });
+    if (used >= budget) return json({ reply: actions.length ? "Done." : OUT_OF_FREE, actions, limited: true });
+  }
+  return json({ reply: "Done.", actions, model, neuronsToday: Math.round(used) });
 }
 
 function escapeHtml(s) { return String(s).replace(/[&<>"]/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m])); }

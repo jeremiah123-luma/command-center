@@ -87,7 +87,7 @@ new_boot = r'''
 
     function setStatus(t,cls){ status.textContent=t; status.className="status"+(cls?" "+cls:""); }
     function addMsg(cls,text){ var d=document.createElement("div"); d.className="msg "+cls; d.textContent=text; log.appendChild(d); log.scrollTop=log.scrollHeight; return d; }
-    function openDrawer(){ CC.openSheet(drawer); if(!log.children.length) addMsg("sys", chatEnabled ? "Link open · ask what's due, tell me things, or “dismiss …”" : "Chat is off (no API key) — anything you say is saved as a note."); }
+    function openDrawer(){ CC.openSheet(drawer); if(!log.children.length) addMsg("sys", chatEnabled ? "Link open · ask what's due, tell me things, or “dismiss …”" : "Answers are off here — anything you say is saved as a note."); }
     function closeDrawer(){ CC.closeSheet(drawer); if(listening&&rec) rec.stop(); }
     $("voice-close").addEventListener("click",closeDrawer);
     CC.on("sheetclose",function(el){ if(el===drawer&&listening&&rec) rec.stop(); });
@@ -111,7 +111,7 @@ new_boot = r'''
           turns.push({role:"user",content:text}); while(turns.length>12) turns.shift();
           ctl=new AbortController();
           var res=await api("/api/chat",{method:"POST",body:JSON.stringify({messages:turns}),signal:ctl.signal});
-          if(res.error){ turns.pop(); bubble.textContent=res.error==="chat_disabled"?"Chat is off — set ANTHROPIC_API_KEY to enable it.":("Error: "+res.error); setStatus("Error","live"); }
+          if(res.error){ turns.pop(); bubble.textContent=res.error==="chat_disabled"?"Answers are off here. Try again later.":"Couldn't get an answer just now. Try again in a minute."; setStatus("Error","live"); }
           else{
             var reply=(res.reply||"").trim(); bubble.textContent=reply; turns.push({role:"assistant",content:reply}); speak(reply); setStatus("Standing by");
             (res.actions||[]).forEach(function(a){ addMsg("sys", a.type==="note"?"note saved":"dismissed · "+a.title); });

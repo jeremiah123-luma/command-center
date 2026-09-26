@@ -20,10 +20,18 @@ run_worker_first = true
 binding = "STATE"
 id = "ec9e55a03e9a4277aa81081417523e29"
 
+# Workers AI: the Talk sheet's answers. Free up to 10,000 neurons a day on every plan; the Worker stops itself at
+# AI_DAILY_NEURONS so it never goes past the free allowance (then messages are saved as notes).
+[ai]
+binding = "AI"
+
 [vars]
 CANVAS_BASE = "https://njit.instructure.com"
 TIMEZONE = "America/New_York"
-# Optional: which Claude model /api/chat uses. Haiku keeps it cheap.
+# Talk (default, free): which Workers AI model answers, and the daily neuron budget it stays under.
+CHAT_AI_MODEL = "@cf/qwen/qwen3-30b-a3b-fp8"
+AI_DAILY_NEURONS = "9000"
+# Only used if the optional ANTHROPIC_API_KEY secret is set (paid; replaces Workers AI).
 CHAT_MODEL = "claude-haiku-4-5"
 
 # Secrets (never in this file). Set each with:  npx wrangler secret put NAME
@@ -32,7 +40,7 @@ CHAT_MODEL = "claude-haiku-4-5"
 #   CANVAS_TOKEN      your Canvas access token
 #   GOOGLE_CLIENT_ID  from Google Cloud console (OAuth client, Web application)
 #   GOOGLE_CLIENT_SECRET
-#   ANTHROPIC_API_KEY optional — enables the in-app chat; leave unset to disable
+#   ANTHROPIC_API_KEY optional and paid — switches Talk from Workers AI to Claude; leave unset to stay free
 
 # Warm the Canvas cache twice an hour so the app opens instantly.
 [triggers]
