@@ -158,9 +158,10 @@
       box-shadow:inset 0 0 0 1px rgba(255,255,255,.28),inset 0 1px 0 rgba(255,255,255,.35);transition:width .6s var(--ease)}
   .pp .fill::after{content:"";position:absolute;right:14px;top:50%;width:2px;height:16px;margin-top:-8px;background:#fff;border-radius:1px}
   .pp .l{position:relative;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52%}
-  .pp .ticks{position:absolute;left:52%;right:74px;top:50%;display:flex;justify-content:space-between;transform:translateY(-50%)}
+  .pp .ticks{position:absolute;left:52%;right:112px;top:50%;display:flex;justify-content:space-between;transform:translateY(-50%)}
   .pp .ticks i{width:3px;height:3px;border-radius:50%;background:rgba(255,255,255,.4)}
-  .pp .r{position:relative;margin-left:auto;font-family:var(--mono);font-size:12px}
+  .pp .r{position:relative;margin-left:auto;font-family:var(--mono);font-size:12px;display:flex;gap:10px}
+  .pp .r .d{color:var(--dim);text-transform:uppercase;letter-spacing:.05em;font-size:10.5px;align-self:center}
   .cta{align-self:flex-start;display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 20px;border-radius:999px;background:#fff;color:#000;font:500 15px var(--sans);border:0;cursor:pointer;text-decoration:none;transition:transform .3s var(--spring)}
   .cta:active{transform:scale(.96)}
   .cta svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8}
@@ -253,11 +254,7 @@
   /* ══ COMMS ══ mic orb (Paper Shaders dithered sphere) + drawer */
   .mic{position:fixed;right:20px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:46;width:60px;height:60px;border-radius:50%;background:var(--k);border:1px solid var(--line);color:#000;cursor:pointer;display:grid;place-items:center;overflow:hidden;padding:0;transition:transform .2s cubic-bezier(.2,.7,.2,1),border-color .2s}
   .mic:hover{transform:scale(1.06);border-color:var(--o)}
-  #orb{position:absolute;inset:0;border-radius:50%;overflow:hidden}
-  #orb canvas{width:100%!important;height:100%!important;display:block}
-  .mic .fallback{position:absolute;inset:14px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#ff9c71,var(--o) 45%,#551a00 100%)}
-  #orb.live + .fallback{display:none}
-  .mic svg{position:relative;width:20px;height:20px;z-index:2;filter:drop-shadow(0 0 3px rgba(255,255,255,.5))}
+  .mic svg{position:relative;width:21px;height:21px;z-index:2}
   .mic .halo{position:absolute;inset:-1px;border-radius:50%;border:1px solid var(--o);opacity:0;z-index:3}
   .mic.listening{border-color:var(--r)} .mic.listening .halo{opacity:1;border-color:var(--r);animation:halo 1.4s ease-out infinite}
   .mic.thinking .halo{opacity:1;border-color:var(--y);border-top-color:transparent;animation:spin 1.1s linear infinite}
@@ -301,7 +298,10 @@
       transform:translateX(var(--kx,0px));transition:transform .55s var(--spring);box-shadow:0 8px 20px rgba(0,0,0,.3)}
   .fuse .bd{position:absolute;top:10px;right:11px;width:8px;height:8px;border-radius:50%;background:var(--o);box-shadow:0 0 0 2px #000;z-index:3;font-size:0;overflow:hidden}
   .fuse .bd:empty{display:none}
-  .dock .mic{position:relative;right:auto;bottom:auto;z-index:auto;width:56px;height:56px;flex:none}
+  .dock .mic{position:relative;right:auto;bottom:auto;z-index:auto;width:56px;height:56px;flex:none;border:0;color:#fff;
+      background:rgba(255,255,255,.1);-webkit-backdrop-filter:blur(14px) saturate(1.5);backdrop-filter:blur(14px) saturate(1.5);
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.22),inset 0 1px 0 rgba(255,255,255,.34),0 8px 18px rgba(0,0,0,.22)}
+  .dock .mic .halo{inset:0}
   .dock .mic:hover{transform:scale(1.05)}
   .voice{right:auto;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px))}
   .fade-b{position:fixed;left:0;right:0;bottom:0;height:150px;z-index:20;pointer-events:none;background:linear-gradient(transparent,rgba(0,0,0,.75) 70%,#000)}
@@ -325,7 +325,8 @@
     .board::-webkit-scrollbar{display:none}
     .board > .page{flex:0 0 100%;width:100%;min-width:0;scroll-snap-align:start;scroll-snap-stop:always;height:100%;display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior-y:contain;scrollbar-width:none;border-top:1px solid var(--line);border-left:1px solid var(--line);padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))}
     .board > .page::-webkit-scrollbar{display:none}
-    .board > .page.p-today{border:0}
+    .board > .page.p-today{border:0;padding-bottom:0}
+    .today{padding-bottom:calc(128px + env(safe-area-inset-bottom,0px))}
     .page > .panel{flex:none}
     .page.p-fill > .panel{flex:1;min-height:0;display:flex;flex-direction:column;border-bottom:0}
     .page.p-fill .panel-head,.page.p-fill .sync{flex:none}
@@ -504,9 +505,8 @@
     <button class="b" type="button" data-page="3" aria-label="Inbox" title="Inbox (4)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13.5l2.5-8h11l2.5 8v6H4z"/><path d="M4 13.5h5l1 2h4l1-2h5"/></svg><span class="bd" id="tn-3"></span></button>
   </nav></div>
 <button class="mic" id="mic" type="button" hidden aria-label="Talk to Command Center" title="Talk to Command Center">
-    <span id="orb" aria-hidden="true"></span><span class="fallback" aria-hidden="true"></span>
     <span class="halo" aria-hidden="true"></span>
-    <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"/></svg>
   </button>
 </div>
 
@@ -824,8 +824,8 @@
       $("hero-tag").textContent=(x.kind==="exam"?"Next exam":"Next up")+" · "+x.course;
       $("hero-title").textContent=x.title+(x.kind==="exam"?" is ":" is due ")+dueWords(x.due,x.allDay)+".";
       var cta=$("hero-cta");
-      if(x.url){ cta.href=x.url; cta.firstChild.textContent=/instructure\.com/.test(x.url)?"Open in Canvas":/google\.com/.test(x.url)?"Open in Calendar":"Open"; cta.hidden=false; }
-      else cta.hidden=true;
+      var cu=/instructure\.com/.test(x.url||"")?x.url:courseUrl(String(x.course||"").replace(/A$/,""));
+      if(cu){ cta.href=cu; cta.hidden=false; } else cta.hidden=true;
     }
     var n=dayOffset(x.due), bits=[];
     if(n>=1) bits.push(whenShort(x.due,x.allDay));
@@ -846,13 +846,15 @@
   }
 
   /* ── what's after that: overdue first, then the next three. Partly done homework is a progress pill. ── */
+  function dueDay(d){ var n=dayOffset(d); return n===0?"Today":n>0&&n<7?d.toLocaleDateString(undefined,{weekday:"short"}):d.toLocaleDateString(undefined,{month:"short",day:"numeric"}); }
+  function lateBy(d){ var p=leftParts(Date.now()-d)[0]; return p[0]+p[1]+" late"; }
   function kRow(x){
     var st=x.late?"late":stateOf(x), tag=x.url?"a":"div", href=x.url?' href="'+esc(x.url)+'" target="_blank" rel="noopener"':'';
     if(x.prog!=null&&x.pts&&!x.late)
-      return '<'+tag+' class="pp"'+href+' style="--p:'+Math.round(x.prog*100)+'%" aria-label="'+esc(x.title+", "+fmtScore(x.score)+" of "+x.pts+" done, due "+whenShort(x.due,x.allDay))+'"><span class="fill"></span><span class="l">'+esc(x.title)+'</span><span class="ticks" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="r">'+fmtScore(x.score)+'/'+x.pts+'</span></'+tag+'>';
+      return '<'+tag+' class="pp"'+href+' style="--p:'+Math.round(x.prog*100)+'%" aria-label="'+esc(x.title+", "+fmtScore(x.score)+" of "+x.pts+" done, due "+whenShort(x.due,x.allDay))+'"><span class="fill"></span><span class="l">'+esc(x.title)+'</span><span class="ticks" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="r"><span class="d">'+esc(dueDay(x.due))+'</span>'+fmtScore(x.score)+'/'+x.pts+'</span></'+tag+'>';
     var p=leftParts(x.due-Date.now())[0], when=x.late?"was due "+whenShort(x.due,false):whenShort(x.due,x.allDay);
     return '<'+tag+' class="kpill"'+href+'><span class="dot '+(st==="exam"?"y":st==="ok"?"g":"")+'"></span><span class="t"><b>'+esc(x.title)+'</b><span>'+esc([x.course,when].filter(Boolean).join(" · "))+'</span></span>'
-      +'<span class="v'+(st==="ok"||st==="exam"?"":" o")+'">'+(x.late?"late":p[0]+p[1])+'</span></'+tag+'>';
+      +'<span class="v'+(st==="ok"||st==="exam"?"":" o")+'">'+(x.late?lateBy(x.due):p[0]+p[1])+'</span></'+tag+'>';
   }
   var afterSig="";
   function renderOverview(){
@@ -953,19 +955,6 @@
   }).then(function(){ CC.nfReady=true; CC.upgradeNums(); }).catch(function(){});
 
 
-  /* ── Paper Shaders: dithered sphere inside the mic button; speeds up while listening ── */
-  function initOrb(P){
-    var host=$("orb"); if(!host) return;
-    function col(){ var th=CC.theme(); return P.getShaderColorFromString(th.machine?"#FF9C71":th.o); }
-    var u={u_colorBack:P.getShaderColorFromString("#000000"),u_colorFront:col(),u_shape:P.DitheringShapes.sphere,u_type:P.DitheringTypes["4x4"],
-           u_pxSize:CC.tune.orb.pixel,u_fit:P.ShaderFitOptions.contain,u_scale:0.8,u_rotation:0,u_offsetX:0,u_offsetY:0,u_originX:0.5,u_originY:0.5,u_worldWidth:0,u_worldHeight:0};
-    var m; try{ m=new P.ShaderMount(host,P.ditheringFragmentShader,u,undefined,REDUCED?0:0.5); }catch(e){ return; }
-    host.classList.add("live"); CC.orb=m;
-    var mic=$("mic");
-    new MutationObserver(function(){ if(REDUCED) return; m.setSpeed(mic.classList.contains("listening")?2.4:mic.classList.contains("thinking")?1.4:0.5); }).observe(mic,{attributes:true,attributeFilter:["class"]});
-    CC.on("theme",function(){ m.setUniforms({u_colorFront:col(),u_pxSize:CC.tune.orb.pixel}); });
-  }
-  import(CDN+"@paper-design/shaders@0.0.81/+esm").then(initOrb).catch(function(){});
 
   /* ── DialKit tune panel (button in the footer, or press ` ) ── */
   var dial=null;
