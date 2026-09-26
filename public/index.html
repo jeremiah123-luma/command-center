@@ -1471,7 +1471,10 @@
     var grid=$("grid"), tabs=Array.prototype.slice.call(document.querySelectorAll("#dock-pages button")), panels=Array.prototype.slice.call(grid.querySelectorAll(".page"));
     function applyMode(){ var ph=window.matchMedia("(max-width:820px)").matches; panels.forEach(function(pg){ pg.style.display=ph?"":"contents"; }); }
     applyMode(); window.addEventListener("resize",applyMode);
-    var mq=window.matchMedia("(max-width:820px)"), current=0, raf=null;
+    var mq=window.matchMedia("(max-width:820px)"), current=0, raf=null, lock=-1, lockT=0;
+    // after a tap, hold the highlight on the tapped tab until the slide/scroll gets there (or a finger takes over)
+    function hold(i){ lock=i; clearTimeout(lockT); lockT=setTimeout(function(){ lock=-1; },1200); }
+    ["touchstart","wheel"].forEach(function(ev){ window.addEventListener(ev,function(){ lock=-1; },{passive:true}); });
     function phone(){ return mq.matches; }
     function setActive(i){ current=i; tabs.forEach(function(b,j){ if(j===i) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); }); try{ localStorage.setItem("cc.page",String(i)); }catch(e){} }
     function indexFromScroll(){
@@ -1482,13 +1485,14 @@
     function goTo(i,smooth){
       i=Math.max(0,Math.min(panels.length-1,i));
       var step=panels.length>1?(panels[1].offsetLeft-panels[0].offsetLeft):0;
+      if(smooth) hold(i);
       grid.scrollTo({left:step*i,behavior:smooth?"smooth":"auto"});
       setActive(i);
     }
-    grid.addEventListener("scroll",function(){ if(!phone()) return; if(raf) return; raf=requestAnimationFrame(function(){ raf=null; var i=indexFromScroll(); if(i!==current) setActive(i); }); },{passive:true});
+    grid.addEventListener("scroll",function(){ if(!phone()) return; if(raf) return; raf=requestAnimationFrame(function(){ raf=null; var i=indexFromScroll(); if(lock>=0){ if(i===lock) lock=-1; return; } if(i!==current) setActive(i); }); },{passive:true});
     var TARGETS=["hero","p-work","p-sched","p-mail"];
     tabs.forEach(function(b){ b.addEventListener("click",function(){ var i=Number(b.getAttribute("data-page"))||0;
-      if(!phone()){ var el=$(TARGETS[i]); if(el) el.scrollIntoView({behavior:REDUCED?"auto":"smooth",block:"start"}); setActive(i); return; }
+      if(!phone()){ var el=$(TARGETS[i]); if(el){ hold(i); el.scrollIntoView({behavior:REDUCED?"auto":"smooth",block:"start"}); } setActive(i); return; }
       goTo(i,true); }); });
     // keyboard: 1–4 jump to a page; ← → swipe on phone-width windows
     document.addEventListener("keydown",function(e){
@@ -1500,6 +1504,7 @@
     window.addEventListener("scroll",function(){ if(phone()||spyRaf) return; spyRaf=requestAnimationFrame(function(){ spyRaf=null;
       var line=innerHeight*0.4, pick=0; TARGETS.forEach(function(id,i){ var el=$(id); if(el&&el.getBoundingClientRect().top<line) pick=i; });
       if((innerHeight+scrollY)>=document.documentElement.scrollHeight-4) pick=TARGETS.length-1;
+      if(lock>=0){ if(pick===lock) lock=-1; return; }
       if(pick!==current) setActive(pick); }); },{passive:true});
     // restore last page (phone only)
     function init(){ if(!phone()) return; var saved=0; try{ saved=Number(localStorage.getItem("cc.page"))||0; }catch(e){} goTo(saved,false); }
