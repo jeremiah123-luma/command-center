@@ -302,7 +302,14 @@
   .talkform .send{background:#fff;color:#000} .talkform .send:disabled{opacity:.5}
   .talkform .stop{color:var(--o)}
   .talk .opts{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px;color:var(--dim);cursor:pointer}
-  .talk .opts input{accent-color:var(--o)}
+  /* a small switch from the kit: white = on, like the dock knob */
+  .talk .opts{position:relative;gap:10px}
+  .talk .opts input{position:absolute;opacity:0;width:1px;height:1px;margin:0}
+  .sw{position:relative;flex:none;width:40px;height:24px;border-radius:12px;background:var(--glass);box-shadow:inset 0 0 0 1px rgba(255,255,255,.22);transition:background-color .25s}
+  .sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,.75);transition:transform .35s var(--spring),background-color .25s}
+  .talk .opts input:checked + .sw{background:#fff;box-shadow:none}
+  .talk .opts input:checked + .sw::after{transform:translateX(16px);background:#000}
+  .talk .opts input:focus-visible + .sw{outline:2px solid var(--o);outline-offset:2px}
 
   /* ══ DOCK ══ four fused glass circles, no labels; a white knob slides to the page you're on. The mic sits beside it. */
   .dock{position:fixed;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:45;display:flex;justify-content:center;align-items:center;gap:8px;pointer-events:none}
@@ -466,7 +473,7 @@
     <button class="gc stop" id="voice-stop" type="button" aria-label="Stop" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1.5" fill="currentColor" stroke="none"/></svg></button>
     <button class="gc send" id="voice-send" type="submit" aria-label="Send"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>
   </form>
-  <label class="opts"><input type="checkbox" id="voice-speak" checked> Read replies aloud</label>
+  <label class="opts"><input type="checkbox" id="voice-speak" role="switch" checked><span class="sw" aria-hidden="true"></span>Read replies aloud</label>
 </section>
 
 <!-- Now playing: the album circle opens this sheet -->
@@ -1427,7 +1434,9 @@
       finally{ busy=false; ctl=null; mic.classList.remove("thinking"); stopBtn.hidden=true; $("voice-send").disabled=false; }
     }
     stopBtn.addEventListener("click",function(){ if(ctl) ctl.abort(); if(window.speechSynthesis) speechSynthesis.cancel(); });
-    form.addEventListener("submit",function(e){ e.preventDefault(); var t=input.value; input.value=""; openDrawer(); ask(t); });
+    function clearInterim(){ [].forEach.call(log.querySelectorAll(".msg.interim"),function(n){ n.remove(); }); }
+    // typing while the mic is on: drop what it heard so far and send the typed message instead
+    form.addEventListener("submit",function(e){ e.preventDefault(); var t=input.value; input.value=""; if(listening&&rec){ rec.typed=true; try{ rec.abort(); }catch(x){} } clearInterim(); openDrawer(); ask(t); });
 
     function startListening(){
       openDrawer();
@@ -1441,7 +1450,7 @@
         if(ev.error==="not-allowed"||ev.error==="service-not-allowed"){ addMsg("sys","Microphone permission denied — allow it in your browser settings for this site, or use the keyboard mic key."); input.focus(); }
         else addMsg("sys", ev.error==="no-speech"?"Didn't catch that.":"Mic error: "+ev.error);
         setStatus("Standing by"); };
-      rec.onend=function(){ listening=false; mic.classList.remove("listening"); var t=(finalText||interim.textContent||"").trim(); interim.remove(); if(t&&t!=="listening…"){ setStatus("Heard you"); ask(t); } else setStatus("Standing by"); };
+      rec.onend=function(){ if(this.typed){ listening=false; mic.classList.remove("listening"); clearInterim(); return; }  listening=false; mic.classList.remove("listening"); var t=(finalText||interim.textContent||"").trim(); interim.remove(); if(t&&t!=="listening…"){ setStatus("Heard you"); ask(t); } else setStatus("Standing by"); };
       try{ rec.start(); }catch(e){ interim.remove(); addMsg("sys","Couldn't start the mic."); }
     }
     mic.addEventListener("click",function(){ if(listening&&rec){ rec.stop(); return; } if(busy) return; startListening(); });

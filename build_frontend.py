@@ -122,7 +122,9 @@ new_boot = r'''
       finally{ busy=false; ctl=null; mic.classList.remove("thinking"); stopBtn.hidden=true; $("voice-send").disabled=false; }
     }
     stopBtn.addEventListener("click",function(){ if(ctl) ctl.abort(); if(window.speechSynthesis) speechSynthesis.cancel(); });
-    form.addEventListener("submit",function(e){ e.preventDefault(); var t=input.value; input.value=""; openDrawer(); ask(t); });
+    function clearInterim(){ [].forEach.call(log.querySelectorAll(".msg.interim"),function(n){ n.remove(); }); }
+    // typing while the mic is on: drop what it heard so far and send the typed message instead
+    form.addEventListener("submit",function(e){ e.preventDefault(); var t=input.value; input.value=""; if(listening&&rec){ rec.typed=true; try{ rec.abort(); }catch(x){} } clearInterim(); openDrawer(); ask(t); });
 
     function startListening(){
       openDrawer();
@@ -136,7 +138,7 @@ new_boot = r'''
         if(ev.error==="not-allowed"||ev.error==="service-not-allowed"){ addMsg("sys","Microphone permission denied — allow it in your browser settings for this site, or use the keyboard mic key."); input.focus(); }
         else addMsg("sys", ev.error==="no-speech"?"Didn't catch that.":"Mic error: "+ev.error);
         setStatus("Standing by"); };
-      rec.onend=function(){ listening=false; mic.classList.remove("listening"); var t=(finalText||interim.textContent||"").trim(); interim.remove(); if(t&&t!=="listening…"){ setStatus("Heard you"); ask(t); } else setStatus("Standing by"); };
+      rec.onend=function(){ if(this.typed){ listening=false; mic.classList.remove("listening"); clearInterim(); return; }  listening=false; mic.classList.remove("listening"); var t=(finalText||interim.textContent||"").trim(); interim.remove(); if(t&&t!=="listening…"){ setStatus("Heard you"); ask(t); } else setStatus("Standing by"); };
       try{ rec.start(); }catch(e){ interim.remove(); addMsg("sys","Couldn't start the mic."); }
     }
     mic.addEventListener("click",function(){ if(listening&&rec){ rec.stop(); return; } if(busy) return; startListening(); });
