@@ -50,8 +50,7 @@
 
   /* ══ BOARD ══ collapsed hairline bento: every cell draws its right+bottom edge, the board draws top+left */
   .board{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));min-width:0}
-  @media (min-width:821px){ .a-canvas,.a-sched,.a-mail{border-top:1px solid var(--line)} .a-canvas{border-left:1px solid var(--line)} }
-  @media (min-width:821px) and (max-width:1180px){ .a-mail{border-left:1px solid var(--line)} }
+  @media (min-width:821px){ .a-sched{border-top:1px solid var(--line);border-left:1px solid var(--line)} }
   .panel{scroll-margin-top:108px;position:relative;min-width:0;border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--k)}
   .panel::before{content:"";position:absolute;left:-5px;top:-5px;width:9px;height:9px;z-index:3;pointer-events:none;
     background:linear-gradient(var(--ink),var(--ink)) center/1px 9px no-repeat,linear-gradient(var(--ink),var(--ink)) center/9px 1px no-repeat;opacity:.55}
@@ -151,6 +150,37 @@
   .cta:active{transform:scale(.96)}
   .cta svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8}
 
+  /* ══ SCREENS ══ Work and Inbox: a serif title, then pieces from the kit floating on the dark (no boxes, no grid lines) */
+  .kscreen{position:relative;min-width:0;padding:6px 2px 32px;color:#F2F2F2;font-size:15px}
+  .khead{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:12px}
+  .khead .lbl{padding-bottom:4px}
+  .ktitle{margin:0;font-family:var(--serif);font-weight:400;font-size:34px;letter-spacing:-.02em;line-height:1}
+  .stack > .lbl:not(:first-child){margin-top:12px}
+  .kempty{margin:0;font-family:var(--serif);font-size:23px;letter-spacing:-.01em;line-height:1.15;color:rgba(255,255,255,.72)}
+  .kscreen .sync{padding:0;margin-top:8px;color:var(--dim)}
+  .kscreen .sync:empty{display:none}
+  .kscreen .scanning,.kscreen .state{padding:12px 0}
+  .kscreen .retry{clip-path:none;border-radius:999px;background:#fff;color:#000;font:500 14px var(--sans);letter-spacing:0;text-transform:none;padding:11px 18px}
+  button.kchip{border:0;cursor:pointer;font-family:var(--sans);transition:background-color .25s,color .25s}
+  .kchip[aria-pressed="true"]{background:#fff;color:#000;box-shadow:none}
+  .kpill.faded{opacity:.45}
+  .av{width:30px;height:30px;border-radius:50%;flex:none;display:grid;place-items:center;font:500 10.5px var(--mono);background:rgba(255,255,255,.1);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
+  .kx{flex:none;width:28px;height:28px;margin-right:-6px;border-radius:50%;border:0;padding:0;display:grid;place-items:center;cursor:pointer;color:var(--dim);background:rgba(255,255,255,.08)}
+  .kx:hover{color:#fff;background:rgba(255,255,255,.16)}
+  .kx svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+  /* departures board: the next thing out, in split-flap letters. It flips only when that thing changes. */
+  .dboard{padding:13px 13px 11px;border-radius:22px;background:rgba(0,0,0,.55);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+  .dboard .bh{display:flex;justify-content:space-between;margin-bottom:9px}
+  .dboard .bh b{font:500 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--y)}
+  .flap{display:flex;flex-wrap:wrap;column-gap:19px;row-gap:4px}
+  .flap .w{display:flex;gap:2px}
+  .flap i{font-style:normal;font-family:var(--mono);font-size:12px;width:15px;height:20px;display:grid;place-items:center;background:#0d0d0d;color:var(--g);border-radius:2px}
+  .dboard .bm{display:flex;justify-content:space-between;gap:10px;margin-top:9px;font-family:var(--mono);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--dim)}
+  .dboard .bm b{color:var(--g);font-weight:500;white-space:nowrap}
+  .flap.s-soon i,.dboard .bm b.s-soon{color:var(--o)}
+  .flap.s-exam i,.dboard .bm b.s-exam{color:var(--y)}
+  @media (min-width:821px){ .kscreen{padding:24px 24px 120px} }
+
   /* ══ TODAY ══ three answers, top to bottom: when to leave · what's due next · what's after that */
   .today{grid-column:span 12;position:relative;max-width:560px;padding:14px 2px 32px;color:#F2F2F2;font-size:15px}
   .today .lead.hot em{color:var(--o)}
@@ -158,33 +188,6 @@
   @media (min-width:821px){ .today{padding:36px 24px 64px} }
 
   /* ══ ROWS ══ */
-  .grp-label{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:14px 16px 6px;display:flex;align-items:baseline;gap:8px}
-  .grp-label::after{content:"";flex:1;border-bottom:1px dotted var(--faint);order:1;transform:translateY(-3px)}
-  .grp-label .n{order:2;color:var(--ink)}
-  .grp-label.overdue{color:var(--r)}
-  .asg{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:14px;align-items:center;padding:11px 16px;text-decoration:none;border-top:1px solid var(--line-2);position:relative}
-  .asg:hover{background:var(--k3)} .asg:hover .ttl{color:var(--o)}
-  .asg .course{display:none}
-  .asg .t{min-width:0}
-  .asg .ttl{display:block;font-size:14.5px;font-weight:500;letter-spacing:-.01em;line-height:1.28;color:var(--ink);overflow-wrap:anywhere;transition:color .15s}
-  .asg .meta{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);margin-top:4px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.02em;flex-wrap:wrap}
-  .asg .meta .code{color:var(--ink-2)}
-  .asg .prog{display:block;height:2px;max-width:240px;background:#222;margin-top:7px}
-  .asg .prog i{display:block;height:100%;background:var(--o)}
-  .pill.part{color:var(--o)}
-  .asg .right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;min-width:44px}
-  .asg .eta{font-family:var(--pixel);font-size:20px;color:var(--ink-2);white-space:nowrap;line-height:1}
-  .asg.soon .eta{color:var(--y)} .asg.overdue .eta{color:var(--r)}
-  .asg.has-x{grid-template-columns:minmax(0,1fr) auto auto}
-  .pill{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;color:var(--muted)}
-  .pill::before{content:"■ "}
-  .pill.open{color:var(--o)} .pill.overdue{color:var(--r)} .pill.done,.pill.graded{color:var(--g)} .pill.late{color:var(--y)}
-  .asg .pill.open{display:none}
-  .dismiss{font-size:15px;line-height:1;color:var(--faint);background:none;border:1px solid transparent;width:28px;height:28px;cursor:pointer;display:grid;place-items:center}
-  .dismiss:hover{border-color:var(--r);color:var(--r)}
-  .more{display:block;width:100%;text-align:left;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:none;border:0;border-top:1px solid var(--line-2);padding:12px 16px;cursor:pointer}
-  .more:hover{color:var(--o)} .more::before{content:"+ "}
-
   .daylabel{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:14px 16px 6px;display:flex;gap:8px;align-items:baseline}
   .daylabel::after{content:"";flex:1;border-bottom:1px dotted var(--faint);transform:translateY(-3px)}
   .daylabel.today{color:var(--ink)}
@@ -205,18 +208,6 @@
   .nowline::after{content:"";flex:1;height:1px;background:var(--o)}
   .nowline b{font-weight:500}
 
-  .mail{display:grid;grid-template-columns:30px minmax(0,1fr);gap:12px;padding:11px 16px;text-decoration:none;color:inherit;border-top:1px solid var(--line-2);align-items:start}
-  .mail:hover{background:var(--k3)} .mail:hover .subj{color:var(--o)}
-  .mail .avatar{width:30px;height:30px;display:grid;place-items:center;font-size:10.5px;font-weight:500;font-family:var(--mono);color:var(--c,var(--ink));border:1px solid var(--line)}
-  .mail .m-body{min-width:0}
-  .mail .m-top{display:flex;gap:8px;align-items:baseline}
-  .mail .from{font-size:12px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink-2)}
-  .mail .ago{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--faint);flex:none}
-  .mail .subj{display:block;font-size:14px;font-weight:500;letter-spacing:-.01em;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink);transition:color .15s}
-  .mail .snip{font-size:12.5px;color:var(--muted);margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-  .star{color:var(--o);font-size:9px}
-  .sep{display:none}
-
   .state{padding:30px 16px;color:var(--muted);font-size:13px}
   .state strong{color:var(--ink);display:block;font-size:20px;font-weight:600;letter-spacing:-.03em;margin-bottom:6px}
   .state .act{margin-top:10px;font-family:var(--mono);font-size:11.5px;color:var(--y)}
@@ -232,7 +223,7 @@
 
   /* ══ MOTION ══ */
   @keyframes rise{from{opacity:.001;transform:translateY(8px)}to{opacity:1;transform:none}}
-  .asg,.item,.mail{animation:rise .45s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--i,0) * 25ms)}
+  .item{animation:rise .45s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--i,0) * 25ms)}
   @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
 
@@ -310,8 +301,8 @@
     .board::-webkit-scrollbar{display:none}
     .board > .page{flex:0 0 100%;width:100%;min-width:0;scroll-snap-align:start;scroll-snap-stop:always;height:100%;display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior-y:contain;scrollbar-width:none;border-top:1px solid var(--line);border-left:1px solid var(--line);padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))}
     .board > .page::-webkit-scrollbar{display:none}
-    .board > .page.p-today{border:0;padding-bottom:0}
-    .today{padding-bottom:calc(128px + env(safe-area-inset-bottom,0px))}
+    .board > .page.p-k{border:0;padding-bottom:0}
+    .today,.kscreen{padding-bottom:calc(128px + env(safe-area-inset-bottom,0px))}
     .page > .panel{flex:none}
     .page.p-fill > .panel{flex:1;min-height:0;display:flex;flex-direction:column;border-bottom:0}
     .page.p-fill .panel-head,.page.p-fill .sync{flex:none}
@@ -423,7 +414,7 @@
 <div class="wrap">
   <div class="board" id="grid">
     <!-- page 0 · today: when to leave · what's due next · what's after that -->
-    <div class="page p-today" data-page="overview" style="display:contents">
+    <div class="page p-k" data-page="overview" style="display:contents">
       <section class="today" id="hero" aria-label="Today">
         <p class="lead" id="nowline" aria-live="polite">Reading your calendar…</p>
         <div class="kchips gap-s" id="chips"></div>
@@ -438,11 +429,19 @@
     </div>
 
     <!-- page 1 · coursework -->
-    <div class="page p-fill" data-page="work" style="display:contents">
-      <section class="panel a-canvas" id="p-work">
-        <div class="panel-head"><h3>Coursework</h3><span class="badge" id="cv-badge">—</span></div>
+    <div class="page p-k" data-page="work" style="display:contents">
+      <section class="kscreen a-canvas" id="p-work" aria-label="Work">
+        <div class="khead"><h2 class="ktitle">Work</h2><span class="lbl" id="cv-badge"></span></div>
         <div class="sync" id="cv-sync"></div>
-        <div class="panel-body" id="cv-body"><div class="scanning">Reading Canvas<small id="cv-boot">linking</small></div></div>
+        <div class="dboard gap-m" id="dboard" hidden>
+          <div class="bh"><b>Departures</b><span class="lbl">next out</span></div>
+          <div class="flap" id="flap"></div>
+          <div class="bm"><span id="dboard-meta"></span><b id="dboard-st"></b></div>
+        </div>
+        <div class="kchips gap-m" id="wfilter" role="group" aria-label="Show">
+          <button class="kchip" type="button" data-f="soon" aria-pressed="true">Due soon</button><button class="kchip" type="button" data-f="week" aria-pressed="false">This week</button><button class="kchip" type="button" data-f="later" aria-pressed="false">Later</button><button class="kchip" type="button" data-f="done" aria-pressed="false">Done</button>
+        </div>
+        <div class="stack gap-m" id="cv-body"><div class="scanning">Reading Canvas<small id="cv-boot">linking</small></div></div>
       </section>
     </div>
 
@@ -455,10 +454,10 @@
     </div>
 
     <!-- page 3 · comms -->
-    <div class="page p-fill" data-page="inbox" style="display:contents">
-      <section class="panel a-mail" id="p-mail">
-        <div class="panel-head"><h3>Inbox</h3><span class="badge" id="mail-badge">—</span></div>
-        <div class="panel-body" id="mail-body"><div class="scanning">Reading inbox</div></div>
+    <div class="page p-k" data-page="inbox" style="display:contents">
+      <section class="kscreen a-mail" id="p-mail" aria-label="Inbox">
+        <div class="khead"><h2 class="ktitle">Inbox</h2><span class="lbl" id="mail-badge"></span></div>
+        <div class="stack gap-m" id="mail-body"><div class="scanning">Reading inbox</div></div>
       </section>
     </div>
   </div>
@@ -597,40 +596,7 @@
     var done=items.filter(function(x){return /done|graded|excused/.test(x.__state);}).sort(function(a,b){return b.__due-a.__due;});
     var weekEnd=new Date(startOfDay(now).getTime()+7*86400000);
     var thisWeek=open.filter(function(x){return x.__due&&x.__due<weekEnd;}), later=open.filter(function(x){return !x.__due||x.__due>=weekEnd;});
-    var badge=$("cv-badge"); badge.textContent=(overdue.length?overdue.length+" overdue · ":"")+open.length+" open"; badge.className="badge"+(overdue.length?" hot":""); setBadge($("tn-1"),thisWeek.length+overdue.length,"Work","due this week or overdue");
-    var rowIdx=0;
-    function row(x){
-      var st=x.__state, hrsLeft=x.__due?(x.__due-now)/3600000:Infinity;
-      var pill = st==="overdue"?'<span class="pill overdue">Overdue</span>': st==="open"?(partial(x,now)?'<span class="pill part">In progress</span>':'<span class="pill open">Open</span>'):
-                 st==="graded"?'<span class="pill graded">Graded</span>': st==="excused"?'<span class="pill done">Excused</span>':'<span class="pill done">Submitted</span>';
-      if(x.late&&x.submitted) pill='<span class="pill late">Late</span>';
-      var due = x.__due ? fmtDay(x.__due)+" · "+fmtTime(x.__due,false) : "no due date";
-      var pr = st==="open"||st==="overdue" ? progOf(x) : null;
-      var pts = (x.points!=null&&x.points>0) ? '<span>'+(pr!=null?fmtScore(x.score)+'/':'')+x.points+' pts</span>' : "";
-      var bar = pr!=null ? '<span class="prog" aria-label="'+Math.round(pr*100)+'% done"><i style="width:'+(pr*100).toFixed(1)+'%"></i></span>' : "";
-      var eta = x.__due && (st==="open"||st==="overdue") ? '<span class="eta">'+esc(relDue(x.__due).toUpperCase())+'</span>' : "";
-      var canX = st==="overdue" && dbRef;
-      var soon = st==="open" && hrsLeft<48 ? " soon" : "";
-      return '<a class="asg '+st+soon+(canX?" has-x":"")+'" style="--i:'+(rowIdx++)+'" href="'+esc(x.url)+'" target="_blank" rel="noopener">'
-        +'<span class="t"><span class="ttl">'+esc(x.title)+'</span><span class="meta"><span class="code"><i class="sq" style="--c:'+hueFor(x.course)+'"></i> '+esc(x.course)+'</span><span>'+esc(due)+'</span>'+pts+'</span>'+bar+'</span>'
-        +'<span class="right">'+eta+pill+'</span>'
-        +(canX?'<button class="dismiss" type="button" data-dismiss="'+esc(x.id)+'" title="Dismiss — not real / Canvas glitch" aria-label="Dismiss '+esc(x.title)+'">×</button>':"")+'</a>';
-    }
-    function group(label,list,cls){ if(!list.length) return ""; return '<div class="grp"><div class="grp-label'+(cls?" "+cls:"")+'">'+label+' <span class="n">'+list.length+'</span></div>'+list.map(row).join("")+'</div>'; }
-    rowIdx=0;
-    var html = group("Overdue — not submitted",overdue,"overdue") + group("Due this week",thisWeek) + group("Coming up",later);
-    if(!open.length&&!overdue.length) html='<div class="state"><strong>All clear</strong>Nothing open in Canvas right now.</div>';
-    if(done.length){ html+='<button class="more" id="cv-more" type="button">'+(showDone?"Hide":"Show")+' '+done.length+' submitted / graded</button>'; if(showDone) html+=group("Submitted",done); }
-    body.innerHTML=html;
-    var btn=$("cv-more"); if(btn) btn.addEventListener("click",function(){showDone=!showDone;renderCanvas();});
-    body.querySelectorAll("[data-dismiss]").forEach(function(b){
-      b.addEventListener("click",function(e){
-        e.preventDefault(); e.stopPropagation();
-        var id=b.getAttribute("data-dismiss"); if(!dbRef||ignored.indexOf(id)>-1) return;
-        var next=ignored.concat([id]); ignored=next; renderCanvas();
-        dbRef.doc("canvas/ignored").set({ids:next,updatedAt:new Date().toISOString()}).catch(function(){});
-      });
-    });
+    $("cv-badge").textContent=open.length+" open · "+overdue.length+" late"; setBadge($("tn-1"),thisWeek.length+overdue.length,"Work","due this week or overdue");
     renderCanvasSync(); renderHero(); renderCal(); try{renderOverview();}catch(e){}
   }
   function canvasState(strong,msg,act,retry){
@@ -702,16 +668,13 @@
     rows.sort(function(a,b){if(a.important!==b.important)return a.important?-1:1;return b.ts-a.ts;});
     mailRows=rows; unreadCount=rows.length; try{renderOverview();}catch(e){}
     $("mail-badge").textContent=rows.length+" unread"; setBadge($("tn-3"),rows.length,"Inbox","unread");
-    if(!rows.length){body.innerHTML='<div class="state"><strong>Inbox zero</strong>No unread mail in the last two weeks.</div>';return;}
-    var html="";
-    rows.slice(0,20).forEach(function(r,i){
-      if(i>0) html+='<div class="sep"></div>';
-      html+='<a class="mail" style="--i:'+i+'" href="https://mail.google.com/mail/u/0/#inbox/'+esc(r.id)+'" target="_blank" rel="noopener">'
-        +'<span class="avatar" style="--c:'+hueFor(r.name)+'">'+esc(initials(r.name))+'</span>'
-        +'<span class="m-body"><span class="m-top"><span class="from">'+(r.important?'<span class="star">■</span> ':"")+esc(r.name)+'</span><span class="ago">'+esc(ago(r.ts).replace(" ago",""))+'</span></span>'
-        +'<span class="subj">'+esc(r.subj)+'</span><span class="snip">'+esc(r.snip)+'</span></span></a>';
-    });
-    body.innerHTML=html;
+    if(!rows.length){ body.innerHTML='<p class="kempty">Inbox zero. Nothing unread from the last two weeks.</p>'; return; }
+    function mailRow(r){ return '<a class="kpill" href="https://mail.google.com/mail/u/0/#inbox/'+esc(r.id)+'" target="_blank" rel="noopener" title="'+esc(r.snip)+'">'
+      +'<span class="av">'+esc(initials(r.name))+'</span><span class="t"><b>'+esc(r.subj)+'</b><span>'+esc(r.name+" · "+ago(r.ts).replace(" ago",""))+'</span></span>'
+      +'<span class="dot'+(r.important?'':' n')+'"></span></a>'; }
+    var imp=rows.filter(function(r){return r.important;}), rest=rows.filter(function(r){return !r.important;}).slice(0,Math.max(0,20-imp.length));
+    body.innerHTML=(imp.length?'<span class="lbl">Important</span>'+imp.map(mailRow).join(""):"")
+      +(rest.length?'<span class="lbl">'+(imp.length?"Everything else":"Unread")+'</span>'+rest.map(mailRow).join(""):"");
   }
 
   function errCopy(code,server){
@@ -779,7 +742,7 @@
     if(n>1&&n<7) return d.toLocaleDateString(undefined,{weekday:"long"});
     return d.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"}); }
   function whenShort(d,allDay){ var n=dayOffset(d);
-    var day=n===0?"Today":n===1?"Tomorrow":n>1&&n<7?d.toLocaleDateString(undefined,{weekday:"short"}):d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
+    var day=n===0?"Today":n===1?"Tomorrow":n===-1?"Yesterday":n>1&&n<7?d.toLocaleDateString(undefined,{weekday:"short"}):d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
     return day+" "+(allDay?"all day":tm(d)); }
   var heroSig=null;
   function renderHero(){
@@ -818,13 +781,15 @@
   /* ── what's after that: overdue first, then the next three. Partly done homework is a progress pill. ── */
   function dueDay(d){ var n=dayOffset(d); return n===0?"Today":n>0&&n<7?d.toLocaleDateString(undefined,{weekday:"short"}):d.toLocaleDateString(undefined,{month:"short",day:"numeric"}); }
   function lateBy(d){ var p=leftParts(Date.now()-d)[0]; return p[0]+p[1]+" late"; }
-  function kRow(x){
+  function kRow(x,inWork){
     var st=x.late?"late":stateOf(x), tag=x.url?"a":"div", href=x.url?' href="'+esc(x.url)+'" target="_blank" rel="noopener"':'';
     if(x.prog!=null&&x.pts&&!x.late)
       return '<'+tag+' class="pp"'+href+' style="--p:'+Math.round(x.prog*100)+'%" aria-label="'+esc(x.title+", "+fmtScore(x.score)+" of "+x.pts+" done, due "+whenShort(x.due,x.allDay))+'"><span class="fill"></span><span class="l">'+esc(x.title)+'</span><span class="ticks" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="r"><span class="d">'+esc(dueDay(x.due))+'</span>'+fmtScore(x.score)+'/'+x.pts+'</span></'+tag+'>';
-    var p=leftParts(x.due-Date.now())[0], when=x.late?"was due "+whenShort(x.due,false):whenShort(x.due,x.allDay);
-    return '<'+tag+' class="kpill"'+href+'><span class="dot '+(st==="exam"?"y":st==="ok"?"g":"")+'"></span><span class="t"><b>'+esc(x.title)+'</b><span>'+esc([x.course,when].filter(Boolean).join(" · "))+'</span></span>'
-      +'<span class="v'+(st==="ok"||st==="exam"?"":" o")+'">'+(x.late?lateBy(x.due):p[0]+p[1])+'</span></'+tag+'>';
+    var p=leftParts(x.due-Date.now())[0], when=x.late?"was due "+whenShort(x.due,false):inWork?(x.allDay?"all day":tm(x.due)):whenShort(x.due,x.allDay);
+    var meta=[x.course,when,inWork&&x.pts?x.pts+" pts":"",inWork&&x.kind==="exam"?"exam":""].filter(Boolean).join(" · ");
+    var kx=inWork&&x.late&&x.id&&dbRef?'<button class="kx" type="button" data-dismiss="'+esc(x.id)+'" aria-label="Dismiss '+esc(x.title)+'" title="Dismiss: not real work (Canvas glitch)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg></button>':'';
+    return '<'+tag+' class="kpill"'+href+'><span class="dot '+(st==="exam"?"y":st==="ok"?"g":"")+'"></span><span class="t"><b>'+esc(x.title)+'</b><span>'+esc(meta)+'</span></span>'
+      +'<span class="v'+(st==="ok"||st==="exam"?"":" o")+'">'+(x.late?lateBy(x.due):p[0]+p[1])+'</span>'+kx+'</'+tag+'>';
   }
   var afterSig="";
   function renderOverview(){
@@ -833,8 +798,78 @@
     var rest=list.slice(1,4);
     if(rest.length) html+='<span class="lbl"'+(od.length?' style="margin-top:12px"':'')+'>After that</span>'+rest.map(kRow).join("");
     if(host&&html!==afterSig){ afterSig=html; host.innerHTML=html; host.hidden=!html; }
+    renderBoard(list); renderWork(list,od);
     CC.emit("overview",{deadlines:list,overdue:od});
   }
+
+  /* ── Work: pill rows grouped by day. Due soon = overdue + the next 3 days; This week = up to 7 days; Later = after that. ── */
+  var workFilter="soon", workSig="";
+  try{ workFilter=localStorage.getItem("cc.work")||"soon"; }catch(e){}
+  function dayLabel(d){ var n=dayOffset(d); return n===0?"Today":n===1?"Tomorrow":n>1&&n<7?d.toLocaleDateString(undefined,{weekday:"long"}):d.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"}); }
+  function workBucket(x){ var n=dayOffset(x.due); return n<=3?"soon":n<=7?"week":"later"; }
+  function doneRow(x){
+    var st=itemState(x,new Date()), res=st==="excused"?"excused":x.score!=null&&x.points>0?fmtScore(x.score)+"/"+x.points:st==="graded"?"graded":"submitted";
+    var tag=x.url?"a":"div", href=x.url?' href="'+esc(x.url)+'" target="_blank" rel="noopener"':'';
+    return '<'+tag+' class="kpill faded"'+href+'><span class="dot n"></span><span class="t"><b>'+esc(x.title)+'</b><span>'+esc(x.course+" · "+res)+'</span></span><span class="v">✓</span></'+tag+'>';
+  }
+  function renderWork(list,od){
+    var host=$("cv-body"); if(!host||!canvas||!canvas.items) return;     // before Canvas answers, keep its loading / error message
+    list=list||deadlineList(); od=od||overdueList();
+    var now=new Date(), html="", cur=null, f=workFilter;
+    [].forEach.call($("wfilter").querySelectorAll("button"),function(b){ b.setAttribute("aria-pressed",String(b.dataset.f===f)); });
+    if(f==="done"){
+      var cut=Date.now()-21*86400000, done=liveItems().filter(function(x){ return /done|graded|excused/.test(itemState(x,now))&&(!x.__due||+x.__due>cut); })
+        .sort(function(a,b){ return (b.__due||0)-(a.__due||0); }).slice(0,25);
+      html=done.length?'<span class="lbl">Last three weeks</span>'+done.map(doneRow).join(""):'<p class="kempty">Nothing turned in over the last three weeks.</p>';
+    } else {
+      if(f==="soon"&&od.length) html+='<span class="lbl">Overdue</span>'+od.map(function(o){ return kRow({title:o.title,course:o.course,due:o.__due,url:o.url,late:true,id:o.id},true); }).join("");
+      list.filter(function(x){ return workBucket(x)===f; }).forEach(function(x){ var k=dayLabel(x.due); if(k!==cur){ cur=k; html+='<span class="lbl">'+esc(k)+'</span>'; } html+=kRow(x,true); });
+      if(f==="later"){ var nd=liveItems().filter(function(x){ return !x.__due&&itemState(x,now)==="open"; });
+        if(nd.length) html+='<span class="lbl">No due date</span>'+nd.map(function(x){ return '<a class="kpill" href="'+esc(x.url)+'" target="_blank" rel="noopener"><span class="dot n"></span><span class="t"><b>'+esc(x.title)+'</b><span>'+esc(x.course+(x.points>0?" · "+x.points+" pts":""))+'</span></span></a>'; }).join(""); }
+      if(!html) html='<p class="kempty">'+(f==="soon"?"Nothing due in the next three days.":f==="week"?"Nothing else due this week.":"Nothing further out yet.")+'</p>';
+    }
+    if(html!==workSig){ workSig=html; host.innerHTML=html; }
+  }
+  (function(){
+    var fl=$("wfilter"), host=$("cv-body"); if(!fl||!host) return;
+    fl.addEventListener("click",function(e){ var b=e.target.closest("button"); if(!b) return; workFilter=b.dataset.f; try{ localStorage.setItem("cc.work",workFilter); }catch(x){} renderWork(); });
+    host.addEventListener("click",function(e){ var b=e.target.closest("[data-dismiss]"); if(!b) return;
+      e.preventDefault(); e.stopPropagation();
+      var id=b.getAttribute("data-dismiss"); if(!dbRef||ignored.indexOf(id)>-1) return;
+      var next=ignored.concat([id]); ignored=next; renderCanvas();
+      dbRef.doc("canvas/ignored").set({ids:next,updatedAt:new Date().toISOString()}).catch(function(){}); });
+  })();
+
+  /* ── departures board: the next thing out. Letters flip only when it changes, and only while you can see the board. ── */
+  var boardSig="", boardWord="", boardPending=false, boardSeen=false, FLAPS="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  function boardStatus(x,st){ var hl=Math.floor((x.due-Date.now())/3600000);
+    return st==="exam"?"Exam":x.prog!=null&&x.pts?fmtScore(x.score)+"/"+x.pts:st==="soon"?(hl>=1?hl+"h left":"under 1h left"):"On track"; }
+  function renderBoard(list){
+    var el=$("dboard"), flap=$("flap"); if(!el) return;
+    var x=(list||deadlineList())[0]; if(!x){ el.hidden=true; boardSig=""; return; }
+    el.hidden=false;
+    var st=stateOf(x), word=String(x.title).toUpperCase().replace(/[’']/g,"").replace(/[^A-Z0-9 .:\-]/g," ").replace(/\s+/g," ").trim();
+    if(word.length>34) word=word.slice(0,33).trim()+".";
+    $("dboard-meta").textContent=whenShort(x.due,x.allDay)+" · "+x.course;
+    var b=$("dboard-st"); b.textContent=boardStatus(x,st); b.className="s-"+st;
+    flap.className="flap s-"+st; flap.setAttribute("aria-label",x.title);
+    if(word===boardSig) return;
+    boardSig=word; boardWord=word;
+    flap.innerHTML=word.split(" ").map(function(w){ return '<span class="w" aria-hidden="true">'+w.split("").map(function(){ return "<i>&nbsp;</i>"; }).join("")+'</span>'; }).join("");
+    boardPending=true; flipBoard();
+  }
+  function flipBoard(){
+    var flap=$("flap"); if(!boardPending||!flap) return;
+    var cells=[].slice.call(flap.querySelectorAll("i")), letters=boardWord.replace(/ /g,"").split("");
+    function fin(){ cells.forEach(function(c,i){ c.textContent=letters[i]; }); }
+    if(REDUCED){ boardPending=false; fin(); return; }
+    if(!boardSeen) return;                                    // wait until the board is on screen
+    boardPending=false;
+    var t=0, iv=setInterval(function(){ t++; cells.forEach(function(c,i){ c.textContent=t>6+i*1.2?letters[i]:FLAPS[(Math.random()*FLAPS.length)|0]; });
+      if(t>6+cells.length*1.2){ clearInterval(iv); fin(); } },55);
+  }
+  if("IntersectionObserver" in window&&$("dboard")) new IntersectionObserver(function(es){ boardSeen=es[es.length-1].isIntersecting; if(boardSeen) flipBoard(); }).observe($("dboard"));
+  else boardSeen=true;
   /* ══════════════════════════════════════════════
      FX — the visual layer. Each piece loads on its own and fails quietly;
      the dashboard works without any of them.

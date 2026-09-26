@@ -147,8 +147,6 @@ new_boot = r'''
 new_script = before_boot + new_boot + pager
 
 # ---- small render-layer tweaks for the standalone build ----
-# the voice drawer no longer needs canTools; ignore dbRef checks for the × button (always available)
-new_script = new_script.replace('var canX = st==="overdue" && dbRef;', 'var canX = st==="overdue";')
 # sync line copy: server caches 10 min, cron warms every 30
 new_script = new_script.replace('" — hourly sync may have stalled"', '" — server cache may be stale"')
 new_script = new_script.replace('var el=$("cv-sync"); if(!canvas){el.textContent="";return;}', 'var el=$("cv-sync"); if(!canvas||!canvas.updatedAt){el.textContent="";return;}')
