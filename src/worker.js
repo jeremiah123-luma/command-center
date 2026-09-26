@@ -152,7 +152,7 @@ function loginPage(msg = "", status = 200) {
 <title>Command Center</title>
 <link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#000000">
 <link rel="apple-touch-icon" href="/icons/icon-180.png?v=2"><link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png?v=2">
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Command Center"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Command Center"><meta name="apple-mobile-web-app-status-bar-style" content="black">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@500;600&family=Geist+Mono:wght@400;500&display=swap">
 <style>
   html,body{height:100%;margin:0;background:#000;color:#E6E6E6;font-family:"Geist",system-ui,sans-serif;display:grid;place-items:center}
