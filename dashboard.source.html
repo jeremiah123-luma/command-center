@@ -56,21 +56,27 @@
   .panel{scroll-margin-top:108px;position:relative;min-width:0;border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--k)}
   .panel::before{content:"";position:absolute;left:-5px;top:-5px;width:9px;height:9px;z-index:3;pointer-events:none;
     background:linear-gradient(var(--ink),var(--ink)) center/1px 9px no-repeat,linear-gradient(var(--ink),var(--ink)) center/9px 1px no-repeat;opacity:.55}
-  /* ══ MAC ══ the same kit in two columns: Today on the left (it stays put while you scroll), Work · Schedule · Inbox on
-     the right. The dock stays centred at the bottom: Today jumps back to the top, the others scroll the right column to
-     that section. Between phone and laptop widths it's one centred column. */
+  /* ══ MAC ══ 1100px+: two columns that scroll on their own (the PAGER builds .col-l / .col-r). Left = Today's top (leave
+     line, chips, next up) with the Schedule rail under it; right = Work, then Inbox. Today's homework rows are hidden
+     there because Work sits right beside them. The dock stays centred: Today/Schedule scroll the left column,
+     Work/Inbox the right. Between phone and laptop widths it's one centred column. */
   @media (min-width:821px){
     .board{grid-template-columns:minmax(0,1fr);max-width:640px;margin:0 auto}
     .board .today,.board .a-canvas,.board .a-sched,.board .a-mail{grid-column:1}
     .kscreen{scroll-margin-top:12px}
   }
   @media (min-width:1100px){
-    .wrap{padding-bottom:0}   /* the grid runs to the bottom of the page, so the pinned Today never gets pushed up */
-    .board{grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:56px;max-width:none;min-height:calc(100vh - 74px)}
-    .board .today{grid-column:1;grid-row:1 / span 3;align-self:start;position:sticky;top:0;max-width:none;max-height:100vh;overflow-y:auto;scrollbar-width:none}
-    .board .today::-webkit-scrollbar{display:none}
-    .board .a-canvas{grid-column:2;grid-row:1} .board .a-sched{grid-column:2;grid-row:2} .board .a-mail{grid-column:2;grid-row:3}
-    html body[data-s="today"] .stage{--gx:30%;--gy:10%}   /* the light sits behind Today's column */
+    body.mac{overflow:hidden}
+    body.mac .wrap{padding-block:0}
+    .board.cols{grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:56px;max-width:none;height:calc(100vh - 58px)}
+    .board.cols > .col{min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;padding-bottom:160px}
+    .board.cols > .col::-webkit-scrollbar{display:none}
+    .board.cols .today{max-width:none;padding-bottom:8px}
+    .board.cols #after{display:none}
+    .board.cols .kscreen,.board.cols .kscreen.a-mail{padding-bottom:24px}
+    .board.cols .lock-form{margin:24px 24px 0}
+    html body[data-s="today"] .stage,html body[data-s="schedule"] .stage{--gx:30%;--gy:10%}   /* the light sits behind the left column */
+    html body[data-s="work"] .stage,html body[data-s="inbox"] .stage{--gx:78%;--gy:8%}
   }
 
   .panel-head{display:flex;align-items:baseline;gap:12px;padding:14px 16px 12px}
@@ -1014,7 +1020,7 @@
       if(!animate) knob.style.transition="none";
       knob.style.setProperty("--kx",btns[i].offsetLeft+"px");
       if(!animate){ void knob.offsetWidth; knob.style.transition=""; }
-      cur=i; document.body.dataset.s=phone.matches?NAMES[i]:"today"; }
+      cur=i; document.body.dataset.s=phone.matches||(CC.cols&&CC.cols())?NAMES[i]:"today"; }
     function blob(){ CC.blob(fuse); }
     new MutationObserver(function(){ if(idx()!==cur) place(true); }).observe(row,{subtree:true,attributes:true,attributeFilter:["aria-current"]});
     place(false); blob();
@@ -1552,8 +1558,29 @@
      ══════════════════════════════════════════════ */
   (function(){
     var grid=$("grid"), tabs=Array.prototype.slice.call(document.querySelectorAll("#dock-pages button")), panels=Array.prototype.slice.call(grid.querySelectorAll(".page"));
+    // Mac (1100px+): regroup the four sections into two columns that scroll on their own; put them back below that
+    var wide=window.matchMedia("(min-width:1100px)"), cols=null, lockF=document.querySelector(".lock-form"), after=$("after");
+    function layoutCols(){
+      if(wide.matches&&!cols){
+        cols=["col col-l","col col-r"].map(function(c){ var d=document.createElement("div"); d.className=c; grid.appendChild(d); return d; });
+        cols[0].appendChild(panels[0]); cols[0].appendChild(panels[2]); if(lockF) cols[0].appendChild(lockF);
+        cols[1].appendChild(panels[1]); cols[1].appendChild(panels[3]);
+        cols.forEach(function(c){ c.addEventListener("scroll",colSpy,{passive:true}); });
+        grid.classList.add("cols"); document.body.classList.add("mac");
+      } else if(!wide.matches&&cols){
+        panels.forEach(function(pg){ grid.appendChild(pg); }); if(lockF&&after) after.parentNode.insertBefore(lockF,after.nextSibling);
+        cols.forEach(function(c){ c.remove(); }); cols=null; grid.classList.remove("cols"); document.body.classList.remove("mac");
+      }
+    }
+    CC.cols=function(){ return cols; };
+    function colSpy(e){ var c=e.currentTarget, left=c===cols[0], top=c.getBoundingClientRect().top, line=top+c.clientHeight*0.4;
+      var second=$(left?"p-sched":"p-mail"), pick=left?0:1;
+      if(second&&second.getBoundingClientRect().top<line) pick=left?2:3;
+      if(c.scrollTop+c.clientHeight>=c.scrollHeight-4&&second) pick=left?2:3;
+      if(lock>=0){ if(lock===pick||!lockMac) lock=-1; else return; }
+      if(pick!==current) setActive(pick); }
     function applyMode(){ var ph=window.matchMedia("(max-width:820px)").matches; panels.forEach(function(pg){ pg.style.display=ph?"":"contents"; }); }
-    applyMode(); window.addEventListener("resize",applyMode);
+    applyMode(); layoutCols(); window.addEventListener("resize",function(){ applyMode(); layoutCols(); });
     var mq=window.matchMedia("(max-width:820px)"), current=0, raf=null, lock=-1, lockT=0, lockMac=false;
     // after a tap, hold the highlight on the tapped tab until the slide/scroll gets there (or a finger takes over)
     function hold(i){ lock=i; clearTimeout(lockT); lockT=setTimeout(function(){ lock=-1; },1200); }
@@ -1576,7 +1603,9 @@
     var TARGETS=["hero","p-work","p-sched","p-mail"];
     tabs.forEach(function(b){ b.addEventListener("click",function(){ var i=Number(b.getAttribute("data-page"))||0;
       if(!phone()){ var el=$(TARGETS[i]); lock=i; lockMac=true; clearTimeout(lockT);   // Mac: Today = back to the top; the others scroll to their section. The tapped circle stays lit until you scroll yourself.
-        if(i===0) window.scrollTo({top:0,behavior:REDUCED?"auto":"smooth"}); else if(el) el.scrollIntoView({behavior:REDUCED?"auto":"smooth",block:"start"});
+        var sm=REDUCED?"auto":"smooth";
+        if(cols){ var col=i===0||i===2?cols[0]:cols[1]; col.scrollTo({top:i===0||i===1?0:Math.max(0,el.getBoundingClientRect().top-col.getBoundingClientRect().top+col.scrollTop-12),behavior:sm}); }
+        else if(i===0) window.scrollTo({top:0,behavior:sm}); else if(el) el.scrollIntoView({behavior:sm,block:"start"});
         setActive(i); return; }
       goTo(i,true); }); });
     // keyboard: 1–4 jump to a page; ← → swipe on phone-width windows
