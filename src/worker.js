@@ -426,16 +426,22 @@ ${data}`;
 
 /* ───────────────────────── live traffic: Google Routes API ─────────────────────────
    GET /api/commute?arrive=<ISO>  → when to leave home to be at NJIT by `arrive`, with traffic.
+   GET /api/commute?home=<ISO>    → the drive home leaving NJIT at that time (one Google call, cached 12 h; the app
+                                    asks once, about 20 min before the last class ends).
    Needs secrets GOOGLE_MAPS_KEY + HOME_ADDRESS (optional CAMPUS_ADDRESS, MAPS_MONTHLY_CAP).
    Traffic-aware requests are the "Compute Routes Pro" SKU: 5,000 free a month. Results are cached in KV
-   (10 min when the drive is < 3 h away, 1 h when < 24 h, 3 h otherwise) and a monthly counter stops calling
-   Google at MAPS_MONTHLY_CAP (default 3000), after which the app falls back to the fixed 45-minute drive. */
+   (10 min when the drive is < 3 h away, 1 h when < 24 h, 3 h otherwise). Two counters stop calling Google:
+   MAPS_DAILY_CAP (default 100 a day) and MAPS_MONTHLY_CAP (default 3000 a month). 100 × 31 days is still under the
+   free 5,000, so the app can't run past the free tier. Past either cap it falls back to the fixed 45-minute drive. */
 const CAMPUS_DEFAULT = "NJIT, 323 Dr Martin Luther King Jr Blvd, Newark, NJ 07102";
-async function routeOnce(env, departAt) {
-  const ck = `maps:calls:${new Date().toISOString().slice(0, 7)}`;
+async function routeOnce(env, departAt, toHome) {
+  const today = new Date().toISOString().slice(0, 10), ck = `maps:calls:${today.slice(0, 7)}`, dk = `maps:calls:day:${today}`;
   const used = Number(await env.STATE.get(ck)) || 0, cap = Number(env.MAPS_MONTHLY_CAP || 3000);
+  const usedToday = Number(await env.STATE.get(dk)) || 0, dayCap = Number(env.MAPS_DAILY_CAP || 100);
   if (used >= cap) throw new Error("maps_cap_reached");
-  const body = { origin: { address: env.HOME_ADDRESS }, destination: { address: env.CAMPUS_ADDRESS || CAMPUS_DEFAULT },
+  if (usedToday >= dayCap) throw new Error("maps_daily_cap_reached");
+  const home = { address: env.HOME_ADDRESS }, campus = { address: env.CAMPUS_ADDRESS || CAMPUS_DEFAULT };
+  const body = { origin: toHome ? campus : home, destination: toHome ? home : campus,
     travelMode: "DRIVE", routingPreference: "TRAFFIC_AWARE_OPTIMAL", trafficModel: "BEST_GUESS" };
   if (departAt && departAt.getTime() > Date.now() + 60000) body.departureTime = departAt.toISOString();
   const r = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
@@ -444,13 +450,30 @@ async function routeOnce(env, departAt) {
     body: JSON.stringify(body),
   });
   await env.STATE.put(ck, String(used + 1), { expirationTtl: 40 * 86400 });
+  await env.STATE.put(dk, String(usedToday + 1), { expirationTtl: 2 * 86400 });
   const j = await r.json().catch(() => ({}));
   if (!r.ok || !j.routes || !j.routes[0]) throw new Error(`maps_${r.status}${j.error && j.error.status ? "_" + j.error.status : ""}`);
   const sec = s => Number(String(s || "0").replace("s", "")) || 0;
   return { sec: sec(j.routes[0].duration), staticSec: sec(j.routes[0].staticDuration) };
 }
+async function getDriveHome(env, iso) {
+  const leave = new Date(iso || "");
+  if (isNaN(leave)) return { ok: false, error: "bad_home" };
+  if (Math.abs(leave.getTime() - Date.now()) > 6 * 3600e3) return { ok: false, error: "too_far" };
+  const key = `commute:home:${leave.toISOString().slice(0, 16)}`;
+  const cached = await env.STATE.get(key, "json");
+  if (cached) return Object.assign(cached, { cached: true });
+  try {
+    const r = await routeOnce(env, leave, true);   // departs at `leave` if that's still ahead, otherwise right now
+    const out = { ok: true, home: true, departAt: leave.toISOString(), durationMin: Math.round(r.sec / 60), staticMin: Math.round(r.staticSec / 60), checkedAt: new Date().toISOString() };
+    out.ratio = out.staticMin ? +(out.durationMin / out.staticMin).toFixed(2) : 1;
+    await env.STATE.put(key, JSON.stringify(out), { expirationTtl: 12 * 3600 });
+    return out;
+  } catch (e) { return { ok: false, error: String(e.message || e) }; }
+}
 async function getCommute(env, url) {
   if (!env.GOOGLE_MAPS_KEY || !env.HOME_ADDRESS) return { ok: false, error: "maps_not_configured" };
+  if (url.searchParams.has("home")) return getDriveHome(env, url.searchParams.get("home"));
   const arrive = new Date(url.searchParams.get("arrive") || "");
   if (isNaN(arrive)) return { ok: false, error: "bad_arrive" };
   const ahead = arrive.getTime() - Date.now();
@@ -549,18 +572,26 @@ async function spotifyNow(env) {
     return {
       ok: true, isPlaying: !!p.is_playing, progressMs: p.progress_ms || 0, liked,
       item: { title: it.name, artists: (it.artists || []).map(a => a.name).join(", ") || (it.show && it.show.name) || "", album: (it.album && it.album.name) || "", art, uri: it.uri, durationMs: it.duration_ms || 0, url: (it.external_urls && it.external_urls.spotify) || "" },
-      device: p.device ? { name: p.device.name, type: p.device.type } : null,
+      device: p.device ? { name: p.device.name, type: p.device.type, volume: p.device.volume_percent, canVolume: !!p.device.supports_volume } : null,
     };
   } catch (e) { return { ok: false, error: String(e.message || e) }; }
 }
 async function spotifyControl(request, env) {
-  const { action, uri } = await request.json().catch(() => ({}));
+  const { action, uri, value } = await request.json().catch(() => ({}));
   const map = { play: ["PUT", "/me/player/play"], pause: ["PUT", "/me/player/pause"], next: ["POST", "/me/player/next"], previous: ["POST", "/me/player/previous"] };
   try {
     if (action === "like" || action === "unlike") {
       if (!uri) return { ok: false, error: "no_track" };
       const r = await sfetch(env, `/me/library?uris=${encodeURIComponent(uri)}`, { method: action === "like" ? "PUT" : "DELETE" });
       if (r.ok) await env.STATE.put(`spotify:liked:${uri}`, action === "like" ? "1" : "0", { expirationTtl: 600 });
+      return { ok: r.ok, status: r.status };
+    }
+    if (action === "volume") {
+      const v = Math.max(0, Math.min(100, Math.round(Number(value))));
+      if (!isFinite(v)) return { ok: false, error: "bad_volume" };
+      const r = await sfetch(env, `/me/player/volume?volume_percent=${v}`, { method: "PUT" });
+      if (r.status === 403) return { ok: false, error: "premium_required" };
+      if (r.status === 404) return { ok: false, error: "no_active_device" };
       return { ok: r.ok, status: r.status };
     }
     const m = map[action];

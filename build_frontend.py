@@ -87,9 +87,10 @@ new_boot = r'''
 
     function setStatus(t,cls){ status.textContent=t; status.className="status"+(cls?" "+cls:""); }
     function addMsg(cls,text){ var d=document.createElement("div"); d.className="msg "+cls; d.textContent=text; log.appendChild(d); log.scrollTop=log.scrollHeight; return d; }
-    function openDrawer(){ drawer.hidden=false; if(!log.children.length) addMsg("sys", chatEnabled ? "Link open · ask what's due, tell me things, or “dismiss …”" : "Chat is off (no API key) — anything you say is saved as a note."); }
-    function closeDrawer(){ drawer.hidden=true; if(listening&&rec) rec.stop(); }
+    function openDrawer(){ CC.openSheet(drawer); if(!log.children.length) addMsg("sys", chatEnabled ? "Link open · ask what's due, tell me things, or “dismiss …”" : "Chat is off (no API key) — anything you say is saved as a note."); }
+    function closeDrawer(){ CC.closeSheet(drawer); if(listening&&rec) rec.stop(); }
     $("voice-close").addEventListener("click",closeDrawer);
+    CC.on("sheetclose",function(el){ if(el===drawer&&listening&&rec) rec.stop(); });
 
     function speak(text){
       if(!speakOn||!window.speechSynthesis||!text) return;
