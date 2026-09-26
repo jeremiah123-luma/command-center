@@ -153,6 +153,11 @@ new_script = new_script.replace('var canX = st==="overdue" && dbRef;', 'var canX
 new_script = new_script.replace('" — hourly sync may have stalled"', '" — server cache may be stale"')
 new_script = new_script.replace('var el=$("cv-sync"); if(!canvas){el.textContent="";return;}', 'var el=$("cv-sync"); if(!canvas||!canvas.updatedAt){el.textContent="";return;}')
 
+# lock: a quiet "Lock" at the bottom of Today (the dock owns the bottom edge of the screen now)
+AFTER = '<div class="stack gap-l" id="after" hidden></div>'
+assert markup.count(AFTER) == 1, "Today markup changed: update the lock anchor in build_frontend.py"
+markup = markup.replace(AFTER, AFTER + '\n        <form method="post" action="/logout" class="lock-form"><button type="submit" class="logout">Lock</button></form>')
+
 title = re.search(r"<title>(.*?)</title>", head_bits).group(1)
 fonts = re.search(r'<link rel="stylesheet" href="([^"]+)">', head_bits).group(1)
 
@@ -181,14 +186,14 @@ head = f'''<!doctype html>
   html{{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}}
   body{{margin:0}} img{{max-width:100%}} [hidden]{{display:none!important}}
   a.retry{{text-decoration:none}}
-  .logout{{position:fixed;left:16px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:5;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);text-decoration:none;opacity:.6}}
-  .logout:hover{{color:var(--o);opacity:1}}
+  .lock-form{{margin-top:40px}}
+  .logout{{background:none;border:0;padding:0;cursor:pointer;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}}
+  .logout:hover{{color:var(--o)}}
 </style>
 </head>
 <body>
 '''
 foot = '''
-<form method="post" action="/logout" class="logout-form" style="display:contents"><button type="submit" class="logout" style="background:none;border:0;cursor:pointer">lock</button></form>
 <script>
 ''' + new_script + '''</script>
 </body>
