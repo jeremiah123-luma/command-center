@@ -680,7 +680,8 @@ async function workersAiChat(env, system, messages, tools, runTool, actions) {
    last reading is 3+ hours old; hard caps SMARTCAR_DAILY_CAP checks a day (default 6) and SMARTCAR_MONTHLY_CAP requests
    a month (default 360, under the free plan's per-vehicle monthly allowance). Smartcar refuses (430 VEHICLE_REQUEST_LIMIT)
    rather than bills when a plan limit is hit; if that ever comes back we stop asking until next month.
-   Secrets: SMARTCAR_CLIENT_ID, SMARTCAR_CLIENT_SECRET. Optional: SMARTCAR_DAILY_CAP, SMARTCAR_MONTHLY_CAP, CAR_MIN_PERCENT (default 60). */
+   Connect uses SMARTCAR_APPLICATION_ID (a [var], not secret); the app token uses the secrets SMARTCAR_CLIENT_ID and
+   SMARTCAR_CLIENT_SECRET. Optional: SMARTCAR_DAILY_CAP, SMARTCAR_MONTHLY_CAP, CAR_MIN_PERCENT (default 60). */
 const SC_API = "https://vehicle.api.smartcar.com/v3";
 const SC_SIGNALS = { percent: "tractionbattery-stateofcharge", range: "tractionbattery-range" };
 function etNow(d = new Date(), tz = "America/New_York") {
@@ -688,10 +689,11 @@ function etNow(d = new Date(), tz = "America/New_York") {
   return { day: `${p.year}-${p.month}-${p.day}`, month: `${p.year}-${p.month}`, min: Number(p.hour) * 60 + Number(p.minute) };
 }
 async function smartcarAuthStart(url, env) {
-  if (!env.SMARTCAR_CLIENT_ID || !env.SMARTCAR_CLIENT_SECRET) return html("<p>SMARTCAR_CLIENT_ID / SMARTCAR_CLIENT_SECRET aren't set yet.</p>", 500);
+  if (!env.SMARTCAR_APPLICATION_ID) return html("<p>SMARTCAR_APPLICATION_ID isn't set in wrangler.toml.</p>", 500);
   const state = crypto.randomUUID();
   await env.STATE.put(`smartcar:state:${state}`, "1", { expirationTtl: 600 });
-  const q = new URLSearchParams({ application_id: env.SMARTCAR_CLIENT_ID, response_type: "code", redirect_uri: `${url.origin}/auth/smartcar/callback`, scope: "read_battery", make: "BMW", state });
+  // Connect takes the Application ID (Configuration → Application details), not the API client id
+  const q = new URLSearchParams({ application_id: env.SMARTCAR_APPLICATION_ID, response_type: "code", redirect_uri: `${url.origin}/auth/smartcar/callback`, scope: "read_battery", make: "BMW", state });
   return Response.redirect(`https://connect.smartcar.com/oauth/authorize?${q}`, 302);
 }
 async function smartcarAuthCallback(url, env) {
@@ -814,4 +816,4 @@ async function carCron(env) {
 function escapeHtml(s) { return String(s).replace(/[&<>"]/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m])); }
 
 // named exports for tests
-export { getCanvas, shortCode, getState, postState, getCommute, spotifyNow, getCar, carCron, smartcarAuthCallback };
+export { getCanvas, shortCode, getState, postState, getCommute, spotifyNow, getCar, carCron, smartcarAuthStart, smartcarAuthCallback };

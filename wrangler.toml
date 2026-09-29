@@ -31,6 +31,8 @@ TIMEZONE = "America/New_York"
 # Talk (default, free): which Workers AI model answers, and the daily neuron budget it stays under.
 CHAT_AI_MODEL = "@cf/qwen/qwen3-30b-a3b-fp8"
 AI_DAILY_NEURONS = "9000"
+# The car: Smartcar Connect's Application ID (Configuration → Application details). Not secret.
+SMARTCAR_APPLICATION_ID = "d2698891-a6fe-46e5-91a5-05a3466aa859"
 # Only used if the optional ANTHROPIC_API_KEY secret is set (paid; replaces Workers AI).
 CHAT_MODEL = "claude-haiku-4-5"
 
