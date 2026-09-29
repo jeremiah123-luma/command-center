@@ -65,7 +65,7 @@ new_boot = r'''
   dbRef={ doc:function(path){ return { set:function(data){ if(path==="canvas/ignored"){ var newest=(data.ids||[]).filter(function(id){return ignored.indexOf(id)<0;}); return Promise.all(newest.map(function(id){return api("/api/state",{method:"POST",body:JSON.stringify({dismiss:id})});})).then(loadState); } return Promise.resolve(); } }; } };
   function refreshAll(){ loadState().then(function(){ loadCanvas(false); }); loadCalendar(); loadGmail(); }
   tick(); refreshAll();
-  CC.standalone=true; startCommute(api); startSpotify(api);   // live traffic + Spotify go through this app's Worker
+  CC.standalone=true; startCommute(api); startSpotify(api); startCar(api);   // live traffic, Spotify and the car go through this app's Worker
   setInterval(function(){ if(document.visibilityState==="visible") refreshAll(); },5*60000);
   document.addEventListener("visibilitychange",function(){ if(document.visibilityState==="visible") refreshAll(); });
   if(location.search.indexOf("connected=google")>-1) history.replaceState(null,"",location.pathname);

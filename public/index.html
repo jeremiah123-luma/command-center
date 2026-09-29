@@ -147,6 +147,8 @@
   .kchip{flex:none;height:34px;padding:0 14px;border-radius:999px;display:inline-flex;align-items:center;gap:7px;font-size:13px;color:rgba(255,255,255,.88);text-decoration:none;
         background:var(--glass);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
   a.kchip:hover{box-shadow:inset 0 0 0 1px rgba(255,255,255,.32)}
+  .kchip.quiet{background:transparent;color:var(--dim);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+  .kchip.act{color:var(--o);box-shadow:inset 0 0 0 1px rgba(255,77,0,.55)}
   .kpill{display:flex;align-items:center;gap:11px;min-height:50px;padding:10px 16px;border-radius:25px;text-decoration:none;color:inherit;
         background:var(--glass);-webkit-backdrop-filter:blur(16px) saturate(1.4);backdrop-filter:blur(16px) saturate(1.4);
         box-shadow:inset 0 0 0 1px rgba(255,255,255,.12),inset 0 1px 0 rgba(255,255,255,.16)}
@@ -1160,7 +1162,7 @@
     var c=d.ratio>=1.3?"":d.ratio>=1.12?"y":"g";
     return '<span class="kchip" title="Drive to NJIT with traffic (Google Maps), checked '+esc(tm(d.checkedAt))+'"><span class="dot '+c+'"></span>'+d.durationMin+' min drive</span>';
   }
-  function renderChips(){ var el=$("chips"); if(!el) return; var h=driveChip()+weatherChip()+examChip(); if(h!==chipSig){ chipSig=h; el.innerHTML=h; } }
+  function renderChips(){ var el=$("chips"); if(!el) return; var h=driveChip()+carChip()+weatherChip()+examChip(); if(h!==chipSig){ chipSig=h; el.innerHTML=h; } }
 
   /* ══════════════════════════════════════════════
      LIVE — standalone app only (the claude.ai copy can't reach these): the build's data layer calls
@@ -1183,11 +1185,35 @@
     try{
       var arrive=new Date(key-CC.commute.buffer*60000).toISOString();
       var d=await commuteApi("/api/commute?arrive="+encodeURIComponent(arrive));
-      if(d&&d.ok){ CC.drive={key:key,late:!!d.late,departAt:d.departAt?new Date(d.departAt):null,etaAt:d.etaAt?new Date(d.etaAt):null,durationMin:d.durationMin,staticMin:d.staticMin,ratio:d.ratio||1,checkedAt:new Date(d.checkedAt||Date.now())}; }
+      if(d&&d.ok){ CC.drive={key:key,late:!!d.late,departAt:d.departAt?new Date(d.departAt):null,etaAt:d.etaAt?new Date(d.etaAt):null,durationMin:d.durationMin,staticMin:d.staticMin,ratio:d.ratio||1,distanceMi:d.distanceMi||null,checkedAt:new Date(d.checkedAt||Date.now())}; }
       else CC.drive=null;
     }catch(err){ CC.drive=null; }
     nowSig=""; renderNow(); try{ renderCal(); }catch(e){}
   }
+  /* ── the car: "i4 · 78% · 220 mi" (/api/car, Smartcar, read-only). The Worker decides when to actually ask the car
+       (a few times a day + on open when the last reading is 3+ h old, with hard caps); here we just read what it has.
+       Orange "Charge tonight" when range is under tomorrow's round trip to NJIT + CAR_MIN_RANGE_MI. ── */
+  CC.car=null; var carApi=null;
+  function startCar(apiFn){ carApi=apiFn; loadCar();
+    setInterval(function(){ if(document.visibilityState!=="hidden") loadCar(); },30*60000);
+    document.addEventListener("visibilitychange",function(){ if(document.visibilityState==="visible") loadCar(); });
+    if(/connected=smartcar/.test(location.search)) history.replaceState(null,"",location.pathname); }
+  async function loadCar(){ try{ CC.car=await carApi("/api/car"); }catch(e){} renderChips(); }
+  function tripMiles(){                          // one way, home → NJIT: live Google distance when we have it, else a road estimate
+    if(CC.drive&&CC.drive.distanceMi) return CC.drive.distanceMi;
+    var a=CC.places.home, b=CC.places.campus, R=3958.8, dLat=(b.lat-a.lat)*Math.PI/180, dLon=(b.lon-a.lon)*Math.PI/180;
+    var h=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+    return Math.round(2*R*Math.asin(Math.sqrt(h))*1.3); }
+  function carChip(){
+    var c=CC.car; if(!c) return "";
+    if(!c.ok&&c.error==="smartcar_not_connected") return '<a class="kchip quiet" href="/auth/smartcar">Connect BMW</a>';
+    if(!c.ok||c.percent==null) return "";
+    var tmrw=campusOn(new Date(startOfDay(new Date()).getTime()+86400000+3600000)).length>0;
+    var need=(tmrw?2*tripMiles():0)+(c.minRangeMi||100), low=c.rangeMi!=null&&c.rangeMi<need;
+    var when=c.checkedAt?"checked "+tm(new Date(c.checkedAt)):"";
+    var say="i4: "+c.percent+"% battery, "+(c.rangeMi!=null?c.rangeMi+" miles of range":"range unknown")+(c.charging?", charging":"")+(low?". Charge tonight: you need about "+Math.round(need)+" miles":"")+(when?" ("+when+")":"");
+    return '<span class="kchip'+(low?' act':'')+'" title="'+esc(say)+'" aria-label="'+esc(say)+'"><span class="dot '+(low?'':c.charging?'g':'n')+'"></span>i4 · '+c.percent+'%'+(c.rangeMi!=null?' · '+c.rangeMi+' mi':'')+(c.charging?' · charging':'')+(low?' · Charge tonight':'')+'</span>'; }
+
   function startCommute(apiFn){ commuteApi=apiFn; refreshCommute(true); refreshHome(); setInterval(function(){ if(document.visibilityState!=="hidden"){ refreshCommute(); refreshHome(); } },5*60000); }
   // the drive home: one traffic check per day, from ~20 min before the last campus class ends (or when the app opens later
   // that evening). The Worker caches the answer for 12 h, so reloads don't ask Google again. Falls back to "about 45 min".
@@ -1337,7 +1363,7 @@
   dbRef={ doc:function(path){ return { set:function(data){ if(path==="canvas/ignored"){ var newest=(data.ids||[]).filter(function(id){return ignored.indexOf(id)<0;}); return Promise.all(newest.map(function(id){return api("/api/state",{method:"POST",body:JSON.stringify({dismiss:id})});})).then(loadState); } return Promise.resolve(); } }; } };
   function refreshAll(){ loadState().then(function(){ loadCanvas(false); }); loadCalendar(); loadGmail(); }
   tick(); refreshAll();
-  CC.standalone=true; startCommute(api); startSpotify(api);   // live traffic + Spotify go through this app's Worker
+  CC.standalone=true; startCommute(api); startSpotify(api); startCar(api);   // live traffic, Spotify and the car go through this app's Worker
   setInterval(function(){ if(document.visibilityState==="visible") refreshAll(); },5*60000);
   document.addEventListener("visibilitychange",function(){ if(document.visibilityState==="visible") refreshAll(); });
   if(location.search.indexOf("connected=google")>-1) history.replaceState(null,"",location.pathname);

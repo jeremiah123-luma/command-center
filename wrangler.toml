@@ -41,6 +41,10 @@ CHAT_MODEL = "claude-haiku-4-5"
 #   GOOGLE_CLIENT_ID  from Google Cloud console (OAuth client, Web application)
 #   GOOGLE_CLIENT_SECRET
 #   ANTHROPIC_API_KEY optional and paid — switches Talk from Workers AI to Claude; leave unset to stay free
+#   SMARTCAR_CLIENT_ID      the car (read-only battery % + range): Smartcar dashboard → API credentials
+#   SMARTCAR_CLIENT_SECRET
+# Optional plain settings (add under [vars] to change): SMARTCAR_DAILY_CAP (checks/day, default 6),
+#   SMARTCAR_MONTHLY_CAP (Smartcar requests/month, default 360), CAR_MIN_RANGE_MI (buffer miles, default 100)
 
 # Warm the Canvas cache twice an hour so the app opens instantly.
 [triggers]

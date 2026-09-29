@@ -55,6 +55,8 @@ export default {
       if (path === "/auth/google/callback") return googleAuthCallback(url, env);
       if (path === "/auth/spotify") return spotifyAuthStart(url, env);
       if (path === "/auth/spotify/callback") return spotifyAuthCallback(url, env);
+      if (path === "/auth/smartcar") return smartcarAuthStart(url, env);
+      if (path === "/auth/smartcar/callback") return smartcarAuthCallback(url, env);
 
       if (path === "/api/canvas") return json(await getCanvas(env, url.searchParams.get("refresh") === "1"));
       if (path === "/api/calendar") return json(await getCalendar(env));
@@ -63,6 +65,7 @@ export default {
       if (path === "/api/chat") return request.method === "POST" ? chat(request, env) : json({ error: "POST only" }, 405);
       if (path === "/api/commute") return json(await getCommute(env, url));
       if (path === "/api/spotify/now") return json(await spotifyNow(env));
+      if (path === "/api/car") return json(await getCar(env, { onOpen: true }));
       if (path === "/api/spotify/control" && request.method === "POST") return json(await spotifyControl(request, env));
 
       // static dashboard
@@ -73,9 +76,11 @@ export default {
     }
   },
 
-  // Cron (see wrangler.toml [triggers]): warm the Canvas cache so the app opens instantly.
+  // Cron (see wrangler.toml [triggers]): warm the Canvas cache so the app opens instantly, and read the car's battery
+  // at its scheduled times (morning before the leave time, midday, evening, late night).
   async scheduled(event, env, ctx) {
     ctx.waitUntil(getCanvas(env, true).then(r => { if (r.ok) console.log(`canvas warm ok: ${r.items.length} items`); else console.error(`canvas warm failed: ${r.error}`); }).catch(() => {}));
+    ctx.waitUntil(carCron(env).catch(e => console.error(`car cron: ${e.message || e}`)));
   },
 };
 
@@ -467,7 +472,7 @@ async function routeOnce(env, departAt, toHome) {
   if (departAt && departAt.getTime() > Date.now() + 60000) body.departureTime = departAt.toISOString();
   const r = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
     method: "POST",
-    headers: { "content-type": "application/json", "x-goog-api-key": env.GOOGLE_MAPS_KEY, "x-goog-fieldmask": "routes.duration,routes.staticDuration" },
+    headers: { "content-type": "application/json", "x-goog-api-key": env.GOOGLE_MAPS_KEY, "x-goog-fieldmask": "routes.duration,routes.staticDuration,routes.distanceMeters" },
     body: JSON.stringify(body),
   });
   await env.STATE.put(ck, String(used + 1), { expirationTtl: 40 * 86400 });
@@ -475,7 +480,7 @@ async function routeOnce(env, departAt, toHome) {
   const j = await r.json().catch(() => ({}));
   if (!r.ok || !j.routes || !j.routes[0]) throw new Error(`maps_${r.status}${j.error && j.error.status ? "_" + j.error.status : ""}`);
   const sec = s => Number(String(s || "0").replace("s", "")) || 0;
-  return { sec: sec(j.routes[0].duration), staticSec: sec(j.routes[0].staticDuration) };
+  return { sec: sec(j.routes[0].duration), staticSec: sec(j.routes[0].staticDuration), distanceMi: j.routes[0].distanceMeters ? Math.round(j.routes[0].distanceMeters / 160.934) / 10 : null };
 }
 async function getDriveHome(env, iso) {
   const leave = new Date(iso || "");
@@ -486,7 +491,7 @@ async function getDriveHome(env, iso) {
   if (cached) return Object.assign(cached, { cached: true });
   try {
     const r = await routeOnce(env, leave, true);   // departs at `leave` if that's still ahead, otherwise right now
-    const out = { ok: true, home: true, departAt: leave.toISOString(), durationMin: Math.round(r.sec / 60), staticMin: Math.round(r.staticSec / 60), checkedAt: new Date().toISOString() };
+    const out = { ok: true, home: true, departAt: leave.toISOString(), durationMin: Math.round(r.sec / 60), staticMin: Math.round(r.staticSec / 60), distanceMi: r.distanceMi, checkedAt: new Date().toISOString() };
     out.ratio = out.staticMin ? +(out.durationMin / out.staticMin).toFixed(2) : 1;
     await env.STATE.put(key, JSON.stringify(out), { expirationTtl: 12 * 3600 });
     return out;
@@ -510,9 +515,9 @@ async function getCommute(env, url) {
     let out;
     if (depart.getTime() <= Date.now()) {            // past the leave time already: how long from right now?
       const n = await routeOnce(env, null);
-      out = { ok: true, late: true, etaAt: new Date(Date.now() + n.sec * 1000).toISOString(), durationMin: Math.round(n.sec / 60), staticMin: Math.round(n.staticSec / 60) };
+      out = { ok: true, late: true, etaAt: new Date(Date.now() + n.sec * 1000).toISOString(), durationMin: Math.round(n.sec / 60), staticMin: Math.round(n.staticSec / 60), distanceMi: n.distanceMi };
     } else {
-      out = { ok: true, late: false, departAt: depart.toISOString(), durationMin: Math.round(r.sec / 60), staticMin: Math.round(r.staticSec / 60) };
+      out = { ok: true, late: false, departAt: depart.toISOString(), durationMin: Math.round(r.sec / 60), staticMin: Math.round(r.staticSec / 60), distanceMi: r.distanceMi };
     }
     out.ratio = out.staticMin ? +(out.durationMin / out.staticMin).toFixed(2) : 1;
     out.arriveBy = arrive.toISOString(); out.checkedAt = new Date().toISOString();
@@ -665,7 +670,148 @@ async function workersAiChat(env, system, messages, tools, runTool, actions) {
   return json({ reply: "Done.", actions, model, neuronsToday: Math.round(used) });
 }
 
+/* ───────────────────────── the car (Smartcar API v3, read-only) ─────────────────────────
+   Battery % and range for one vehicle (BMW i4), from the two signals the free plan allows:
+   tractionbattery-stateofcharge and tractionbattery-range. Nothing here sends commands to the car.
+   Auth (v3): the owner connects once through Smartcar Connect (/auth/smartcar); the redirect carries a user_id, which we keep
+   in KV with the vehicle id from /v3/connections. Each read uses an app token from the client-credentials flow (1 hour,
+   cached in KV, re-requested when it runs out — there is no per-user token to refresh).
+   Budget: a check is 2 signal requests. At most ~4 scheduled checks a day (carCron) plus one when the app opens and the
+   last reading is 3+ hours old; hard caps SMARTCAR_DAILY_CAP checks a day (default 6) and SMARTCAR_MONTHLY_CAP requests
+   a month (default 360, under the free plan's per-vehicle monthly allowance). Smartcar refuses (430 VEHICLE_REQUEST_LIMIT)
+   rather than bills when a plan limit is hit; if that ever comes back we stop asking until next month.
+   Secrets: SMARTCAR_CLIENT_ID, SMARTCAR_CLIENT_SECRET. Optional: SMARTCAR_DAILY_CAP, SMARTCAR_MONTHLY_CAP, CAR_MIN_RANGE_MI. */
+const SC_API = "https://vehicle.api.smartcar.com/v3";
+const SC_SIGNALS = { percent: "tractionbattery-stateofcharge", range: "tractionbattery-range" };
+function etNow(d = new Date(), tz = "America/New_York") {
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(d).map(x => [x.type, x.value]));
+  return { day: `${p.year}-${p.month}-${p.day}`, month: `${p.year}-${p.month}`, min: Number(p.hour) * 60 + Number(p.minute) };
+}
+async function smartcarAuthStart(url, env) {
+  if (!env.SMARTCAR_CLIENT_ID || !env.SMARTCAR_CLIENT_SECRET) return html("<p>SMARTCAR_CLIENT_ID / SMARTCAR_CLIENT_SECRET aren't set yet.</p>", 500);
+  const state = crypto.randomUUID();
+  await env.STATE.put(`smartcar:state:${state}`, "1", { expirationTtl: 600 });
+  const q = new URLSearchParams({ application_id: env.SMARTCAR_CLIENT_ID, response_type: "code", redirect_uri: `${url.origin}/auth/smartcar/callback`, scope: "read_battery", make: "BMW", state });
+  return Response.redirect(`https://connect.smartcar.com/oauth/authorize?${q}`, 302);
+}
+async function smartcarAuthCallback(url, env) {
+  const state = url.searchParams.get("state");
+  if (!state || !(await env.STATE.get(`smartcar:state:${state}`))) return html("<p>That sign-in link expired. Go back and tap Connect BMW again.</p>", 400);
+  await env.STATE.delete(`smartcar:state:${state}`);
+  if (url.searchParams.get("error")) return html(`<p>Smartcar didn't connect: ${escapeHtml(url.searchParams.get("error_description") || url.searchParams.get("error"))}</p><p><a href="/">Back to Command Center</a></p>`, 400);
+  try {
+    const found = await smartcarFindVehicle(env, url.searchParams.get("user_id"));
+    if (!found) return html("<p>Connected, but Smartcar didn't list a vehicle yet. Try Connect BMW again in a minute.</p>", 502);
+    await env.STATE.put("smartcar:vehicle", JSON.stringify(found));
+    await env.STATE.delete("car:reading");
+    await getCar(env, { force: true });                       // first reading right away (counts toward the caps)
+  } catch (e) { return html(`<p>Couldn't finish connecting: ${escapeHtml(String(e.message || e))}</p>`, 502); }
+  return Response.redirect(`${url.origin}/?connected=smartcar`, 302);
+}
+async function smartcarToken(env) {
+  const c = await env.STATE.get("smartcar:app_token", "json");
+  if (c && c.exp > Date.now()) return c.token;
+  const r = await fetch("https://iam.smartcar.com/oauth2/token", {
+    method: "POST", headers: { "content-type": "application/x-www-form-urlencoded", "user-agent": "command-center/1.0" },
+    body: new URLSearchParams({ grant_type: "client_credentials", client_id: env.SMARTCAR_CLIENT_ID, client_secret: env.SMARTCAR_CLIENT_SECRET }),
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.access_token) throw new Error(`smartcar_token_${r.status}`);
+  await env.STATE.put("smartcar:app_token", JSON.stringify({ token: j.access_token, exp: Date.now() + ((j.expires_in || 3600) - 120) * 1000 }), { expirationTtl: Math.max(60, (j.expires_in || 3600) - 60) });
+  return j.access_token;
+}
+async function smartcarFindVehicle(env, userId) {                // one call to /connections at connect time
+  const q = new URLSearchParams({ "filter[vehicle.mode]": "live", "page[size]": "10" });
+  if (userId) q.set("filter[userId]", userId);
+  const r = await fetch(`${SC_API}/connections?${q}`, { headers: { authorization: `Bearer ${await smartcarToken(env)}`, "user-agent": "command-center/1.0" } });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(`smartcar_connections_${r.status}`);
+  const c = (j.data || [])[0]; if (!c) return null;
+  const v = c.attributes?.vehicle || {};
+  return { vehicleId: c.relationships?.vehicle?.data?.id, userId: userId || c.relationships?.user?.data?.id || c.attributes?.user?.id, make: v.make || "", model: v.model || "", year: v.year || null };
+}
+async function smartcarSignal(env, veh, code) {
+  const r = await fetch(`${SC_API}/vehicles/${encodeURIComponent(veh.vehicleId)}/signals/${code}`, {
+    headers: { authorization: `Bearer ${await smartcarToken(env)}`, "sc-user-id": veh.userId, "user-agent": "command-center/1.0" },
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) { const e = new Error(j.code || j.type || `smartcar_${r.status}`); e.status = r.status; throw e; }
+  const a = j.data?.attributes || {};
+  if (a.status && a.status.value && a.status.value !== "SUCCESS") throw new Error(`signal_${a.status.value}`);
+  return { body: a.body || {}, at: j.data?.meta?.oemUpdatedAt || j.data?.meta?.retrievedAt || new Date().toISOString() };
+}
+// the one place that decides whether we may ask the car right now
+async function carAllowance(env) {
+  const t = etNow(new Date(), env.TIMEZONE), dayCap = Number(env.SMARTCAR_DAILY_CAP || 6), monthCap = Number(env.SMARTCAR_MONTHLY_CAP || 360);
+  const checks = Number(await env.STATE.get(`car:checks:${t.day}`)) || 0, reqs = Number(await env.STATE.get(`car:req:${t.month}`)) || 0;
+  if (await env.STATE.get(`car:blocked:${t.month}`)) return { ok: false, why: "plan_limit" };
+  if (checks >= dayCap) return { ok: false, why: "daily_cap" };
+  if (reqs + 2 > monthCap) return { ok: false, why: "monthly_cap" };
+  return { ok: true, t, checks, reqs };
+}
+async function getCar(env, opt = {}) {
+  if (!env.SMARTCAR_CLIENT_ID || !env.SMARTCAR_CLIENT_SECRET) return { ok: false, error: "smartcar_not_configured" };
+  const veh = await env.STATE.get("smartcar:vehicle", "json");
+  if (!veh || !veh.vehicleId) return { ok: false, error: "smartcar_not_connected" };
+  const minRangeMi = Number(env.CAR_MIN_RANGE_MI || 100);
+  const last = await env.STATE.get("car:reading", "json");
+  const age = last ? Date.now() - Date.parse(last.checkedAt) : Infinity;
+  const want = opt.force || (opt.onOpen && age >= 3 * 3600e3) || opt.scheduled;
+  const out = r => Object.assign({ ok: true, minRangeMi, model: [veh.year, veh.make, veh.model].filter(Boolean).join(" ") }, r);
+  if (!want) return last ? out(last) : out({ percent: null, rangeMi: null, checkedAt: null, charging: false });
+  const al = await carAllowance(env);
+  if (!al.ok) return last ? out(Object.assign({}, last, { held: al.why })) : out({ percent: null, rangeMi: null, checkedAt: null, charging: false, held: al.why });
+  if (await env.STATE.get("car:busy")) return last ? out(last) : out({ percent: null, rangeMi: null, checkedAt: null, charging: false });
+  await env.STATE.put("car:busy", "1", { expirationTtl: 60 });   // one check at a time
+  await env.STATE.put(`car:checks:${al.t.day}`, String(al.checks + 1), { expirationTtl: 3 * 86400 });
+  let sent = 0;
+  try {
+    sent++; const soc = await smartcarSignal(env, veh, SC_SIGNALS.percent);
+    sent++; const rng = await smartcarSignal(env, veh, SC_SIGNALS.range);
+    const percent = Math.round(Number(soc.body.value));
+    const unit = String(rng.body.unit || "km").toLowerCase(), rv = Number(rng.body.value);
+    const rangeMi = isFinite(rv) ? Math.round(/mi/.test(unit) ? rv : rv / 1.609344) : null;
+    // "charging": the % went up since the last reading (the charging-status signal is a paid one, so we infer it)
+    const charging = !!(last && last.percent != null && percent > last.percent);
+    const reading = { percent: isFinite(percent) ? percent : null, rangeMi, checkedAt: new Date().toISOString(), oemAt: soc.at, charging, prevPercent: last ? last.percent : null };
+    await env.STATE.put("car:reading", JSON.stringify(reading));
+    return out(reading);
+  } catch (e) {
+    if (e.status === 430 || /VEHICLE_REQUEST_LIMIT|INVALID_PLAN/.test(e.message)) await env.STATE.put(`car:blocked:${al.t.month}`, e.message, { expirationTtl: 32 * 86400 });
+    return last ? out(Object.assign({}, last, { error: String(e.message || e) })) : { ok: false, error: String(e.message || e), minRangeMi };
+  } finally {
+    await env.STATE.put(`car:req:${al.t.month}`, String(al.reqs + sent), { expirationTtl: 40 * 86400 });
+    await env.STATE.delete("car:busy");
+  }
+}
+// scheduled reads: morning (30 min before today's leave time, from the calendar; 8:00 when there's no class),
+// 12:30, 18:30 and 22:30 Eastern. Each slot runs once, within an hour of its time.
+async function carCron(env) {
+  if (!env.SMARTCAR_CLIENT_ID || !(await env.STATE.get("smartcar:vehicle"))) return;
+  const t = etNow(new Date(), env.TIMEZONE);
+  let morning = Number(await env.STATE.get(`car:morning:${t.day}`));
+  if (!morning && t.min >= 4 * 60) {                               // work out today's morning slot once
+    morning = 8 * 60;
+    try {
+      const cal = await getCalendar(env), toMin = d => etNow(new Date(d), env.TIMEZONE);
+      const first = (cal.events || []).filter(e => e.start?.dateTime && e.status !== "cancelled" && /NJIT/i.test(e.location || "") && !/zoom|virtual|online/i.test(e.location || ""))
+        .map(e => toMin(e.start.dateTime)).filter(x => x.day === t.day).sort((a, b) => a.min - b.min)[0];
+      if (first) morning = Math.max(5 * 60, first.min - 55 - 30);  // leave = class − 45 min drive − 10 min buffer; check 30 min before that
+    } catch {}
+    await env.STATE.put(`car:morning:${t.day}`, String(morning), { expirationTtl: 2 * 86400 });
+  }
+  for (const [name, at] of [["morning", morning], ["midday", 750], ["evening", 1110], ["late", 1350]]) {
+    const from = name === "morning" ? at - 30 : at;               // cron ticks every 30 min: take the tick just before the morning slot
+    if (!at || t.min < from || t.min >= from + 60) continue;
+    const k = `car:slot:${t.day}:${name}`;
+    if (await env.STATE.get(k)) continue;
+    await env.STATE.put(k, "1", { expirationTtl: 2 * 86400 });
+    const r = await getCar(env, { scheduled: true });
+    console.log(`car ${name}: ${r.percent ?? "-"}% ${r.rangeMi ?? "-"} mi${r.held ? " (held: " + r.held + ")" : ""}${r.error ? " (" + r.error + ")" : ""}`);
+  }
+}
+
 function escapeHtml(s) { return String(s).replace(/[&<>"]/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m])); }
 
 // named exports for tests
-export { getCanvas, shortCode, getState, postState, getCommute, spotifyNow };
+export { getCanvas, shortCode, getState, postState, getCommute, spotifyNow, getCar, carCron, smartcarAuthCallback };
