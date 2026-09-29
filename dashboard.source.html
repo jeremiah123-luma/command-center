@@ -267,6 +267,11 @@
   .art-big img:not([src]){display:none}
   #np-like[aria-pressed="true"]{color:var(--o)} #np-like[aria-pressed="true"] svg{fill:currentColor}
   .pp.drag{cursor:ew-resize;touch-action:none}
+  /* volume: the right 64px belong to the number; the fill runs from 50px (0) to 100% − 64px (100), so the white thumb
+     (inside the fill's edge) never reaches the number */
+  .pp.vol .fill{width:calc(50px + (100% - 114px) * var(--pv,.5))}
+  .pp.vol .ticks{right:96px}
+  .pp.vol .r{min-width:40px;padding-left:12px;justify-content:flex-end;font-variant-numeric:tabular-nums}
   .np-ctl{display:flex;justify-content:center;margin-top:22px}
   .fuse.sm .b{width:50px;height:50px} .fuse.sm .b.big{width:60px;height:60px;margin-block:-5px}
   .fuse .b.fillsvg svg{fill:currentColor;stroke:none}
@@ -460,8 +465,7 @@
     <span class="ktag" id="np-dev" hidden></span>
     <p class="ktitle" id="np-title"></p>
     <p class="lbl" id="np-sub" style="color:rgba(255,255,255,.65)"></p>
-    <div class="pp" id="np-prog" style="--p:0%;margin-top:6px" aria-hidden="true"><span class="fill"></span><span class="l" id="np-pos" style="font-family:var(--mono);font-size:12px">0:00</span><span class="ticks"><i></i><i></i><i></i><i></i></span><span class="r" id="np-dur">0:00</span></div>
-    <div class="pp drag" id="np-vol" hidden role="slider" aria-label="Volume" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50" tabindex="0"><span class="fill"></span><span class="l">Volume</span><span class="ticks" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="r" id="np-volv">50</span></div>
+    <div class="pp drag vol" id="np-vol" style="margin-top:6px" hidden role="slider" aria-label="Volume" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50" tabindex="0"><span class="fill"></span><span class="l">Volume</span><span class="ticks" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="r" id="np-volv">50</span></div>
   </div>
   <div class="np-ctl"><div class="fuse sm"><div class="row">
     <button class="b fillsvg" type="button" id="np-prev" aria-label="Previous"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2.5v14H6zM19 5v14L9 12z"/></svg></button>
@@ -1205,9 +1209,8 @@
        (when the device allows it), like, and previous / play-pause / next as fused circles. The light takes the cover's
        colour on this sheet. Polls every 5 s while playing, 20 s otherwise. ── */
   var sp={api:null,d:null,at:0,timer:null,busy:false,volT:0,volHold:0};
-  function mmss(ms){ var t=Math.max(0,Math.floor(ms/1000)); return Math.floor(t/60)+":"+String(t%60).padStart(2,"0"); }
   function startSpotify(apiFn){
-    sp.api=apiFn; pollSpotify(); setInterval(spotifyTick,1000);
+    sp.api=apiFn; pollSpotify();
     document.addEventListener("visibilitychange",function(){ if(document.visibilityState==="visible") pollSpotify(); });
     $("np").addEventListener("click",function(){ var d=sp.d;
       if(d&&!d.ok&&d.error==="spotify_not_connected"){ location.href="/auth/spotify"; return; }
@@ -1217,7 +1220,8 @@
     $("np-prev").addEventListener("click",function(){ spotifyDo("previous"); });
     $("np-like").addEventListener("click",function(){ spotifyDo(sp.d&&sp.d.liked?"unlike":"like"); });
     var vol=$("np-vol");
-    function at(x){ var r=vol.getBoundingClientRect(); setVol((x-r.left)/r.width*100,true); }
+    // the thumb sits 14px inside the fill's edge, and the fill spans 50px → (width − 64px): map the finger to that track
+    function at(x){ var r=vol.getBoundingClientRect(); setVol((x-r.left-36)/Math.max(1,r.width-114)*100,true); }
     vol.addEventListener("pointerdown",function(e){ vol.setPointerCapture(e.pointerId); at(e.clientX); });
     vol.addEventListener("pointermove",function(e){ if(vol.hasPointerCapture(e.pointerId)) at(e.clientX); });
     vol.addEventListener("keydown",function(e){ var v=+vol.getAttribute("aria-valuenow"), k=e.key;
@@ -1225,7 +1229,7 @@
     if(/connected=spotify/.test(location.search)) history.replaceState(null,"",location.pathname);
   }
   function setVol(v,send){ v=Math.max(0,Math.min(100,Math.round(v))); var vol=$("np-vol");
-    vol.style.setProperty("--p",v+"%"); vol.setAttribute("aria-valuenow",v); $("np-volv").textContent=v;
+    vol.style.setProperty("--pv",String(v/100)); vol.setAttribute("aria-valuenow",v); $("np-volv").textContent=v;
     if(!send) return;
     sp.volHold=Date.now()+4000; if(sp.d&&sp.d.device) sp.d.device.volume=v;            // don't let a poll snap it back mid-drag
     clearTimeout(sp.volT); sp.volT=setTimeout(function(){ sp.api("/api/spotify/control",{method:"POST",body:JSON.stringify({action:"volume",value:v})})
@@ -1281,10 +1285,7 @@
     var like=$("np-like"); like.setAttribute("aria-pressed",String(!!d.liked)); like.setAttribute("aria-label",d.liked?"Remove from Liked Songs":"Save to Liked Songs");
     var vol=$("np-vol"), canV=!!(d.device&&d.device.canVolume&&d.device.volume!=null); vol.hidden=!canV;
     if(canV&&Date.now()>sp.volHold) setVol(d.device.volume,false);
-    spotifyTick();
   }
-  function spotifyTick(){ var d=sp.d, sh=$("npsheet"); if(!d||!d.item||!d.item.durationMs||!sh||sh.hidden) return;
-    var p=spotifyPos(); $("np-prog").style.setProperty("--p",(100*p/d.item.durationMs).toFixed(2)+"%"); $("np-pos").textContent=mmss(p); $("np-dur").textContent=mmss(d.item.durationMs); }
   loadWeather(); setInterval(function(){ if(document.visibilityState!=="hidden") loadWeather(); },30*60000);
   events=commonExams(); renderChips();
   setTimeout(function(){ if(!calSources.primary&&!calSources.canvas){ var el=$("nowline"); if(el&&/Reading/.test(el.textContent)) el.textContent="Calendar isn't connected here, so there's no plan for today yet."; } },15000);
