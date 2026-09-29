@@ -622,7 +622,8 @@ async function spotifyControl(request, env) {
     }
     const m = map[action];
     if (!m) return { ok: false, error: "bad_action" };
-    const r = await sfetch(env, m[1], { method: m[0] });
+    const playOne = action === "play" && typeof value === "string" && /^spotify:(track|episode):[A-Za-z0-9]+$/.test(value);   // library list: start this song
+    const r = await sfetch(env, m[1], playOne ? { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ uris: [value] }) } : { method: m[0] });
     if (r.status === 403) return { ok: false, error: "premium_required" };
     if (r.status === 404) return { ok: false, error: "no_active_device" };
     return { ok: r.ok, status: r.status };
