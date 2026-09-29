@@ -1162,27 +1162,29 @@
   }
   /* ── the car: "i4 · 78% · 220 mi" (/api/car, Smartcar, read-only). The Worker decides when to actually ask the car
        (a few times a day + on open when the last reading is 3+ h old, with hard caps); here we just read what it has.
-       Orange "Charge tonight" when range is under tomorrow's round trip to NJIT + CAR_MIN_RANGE_MI. ── */
+       Goal: at least CAR_MIN_PERCENT (60%) before you leave on a class day. The chip turns orange
+       - "Charge tonight": the evening check (6 PM or later) says under 60%, not charging, and tomorrow has a class;
+       - "Below 60%": the morning of a class day, before the first class, still under 60% and not charging.
+       Calm while the % is rising, and never before a day without class. ── */
   CC.car=null; var carApi=null;
   function startCar(apiFn){ carApi=apiFn; loadCar();
     setInterval(function(){ if(document.visibilityState!=="hidden") loadCar(); },30*60000);
     document.addEventListener("visibilitychange",function(){ if(document.visibilityState==="visible") loadCar(); });
     if(/connected=smartcar/.test(location.search)) history.replaceState(null,"",location.pathname); }
   async function loadCar(){ try{ CC.car=await carApi("/api/car"); }catch(e){} renderChips(); }
-  function tripMiles(){                          // one way, home → NJIT: live Google distance when we have it, else a road estimate
-    if(CC.drive&&CC.drive.distanceMi) return CC.drive.distanceMi;
-    var a=CC.places.home, b=CC.places.campus, R=3958.8, dLat=(b.lat-a.lat)*Math.PI/180, dLon=(b.lon-a.lon)*Math.PI/180;
-    var h=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
-    return Math.round(2*R*Math.asin(Math.sqrt(h))*1.3); }
+  function carNag(c,now){
+    var minP=c.minPercent||60; if(c.percent==null||c.percent>=minP||c.charging) return "";
+    var day0=startOfDay(now).getTime(), today=campusOn(now), tmrw=campusOn(new Date(day0+86400000+3600000));
+    if(today.length&&now<today[0].__start) return "Below "+minP+"%";                          // class-day morning, not left yet
+    if(tmrw.length&&c.checkedAt&&+new Date(c.checkedAt)>=day0+18*3600000) return "Charge tonight"; // after the evening check
+    return ""; }
   function carChip(){
     var c=CC.car; if(!c) return "";
     if(!c.ok&&c.error==="smartcar_not_connected") return '<a class="kchip quiet" href="/auth/smartcar">Connect BMW</a>';
     if(!c.ok||c.percent==null) return "";
-    var tmrw=campusOn(new Date(startOfDay(new Date()).getTime()+86400000+3600000)).length>0;
-    var need=(tmrw?2*tripMiles():0)+(c.minRangeMi||100), low=c.rangeMi!=null&&c.rangeMi<need;
-    var when=c.checkedAt?"checked "+tm(new Date(c.checkedAt)):"";
-    var say="i4: "+c.percent+"% battery, "+(c.rangeMi!=null?c.rangeMi+" miles of range":"range unknown")+(c.charging?", charging":"")+(low?". Charge tonight: you need about "+Math.round(need)+" miles":"")+(when?" ("+when+")":"");
-    return '<span class="kchip'+(low?' act':'')+'" title="'+esc(say)+'" aria-label="'+esc(say)+'"><span class="dot '+(low?'':c.charging?'g':'n')+'"></span>i4 · '+c.percent+'%'+(c.rangeMi!=null?' · '+c.rangeMi+' mi':'')+(c.charging?' · charging':'')+(low?' · Charge tonight':'')+'</span>'; }
+    var nag=carNag(c,new Date()), when=c.checkedAt?"checked "+tm(new Date(c.checkedAt)):"";
+    var say="i4: "+c.percent+"% battery, "+(c.rangeMi!=null?c.rangeMi+" miles of range":"range unknown")+(c.charging?", charging":"")+(nag?". "+nag+": aim for "+(c.minPercent||60)+"% before class":"")+(when?" ("+when+")":"");
+    return '<span class="kchip'+(nag?' act':'')+'" title="'+esc(say)+'" aria-label="'+esc(say)+'"><span class="dot '+(nag?'':c.charging?'g':'n')+'"></span>i4 · '+c.percent+'%'+(c.rangeMi!=null?' · '+c.rangeMi+' mi':'')+(c.charging?' · charging':'')+(nag?' · '+nag:'')+'</span>'; }
 
   function startCommute(apiFn){ commuteApi=apiFn; refreshCommute(true); refreshHome(); setInterval(function(){ if(document.visibilityState!=="hidden"){ refreshCommute(); refreshHome(); } },5*60000); }
   // the drive home: one traffic check per day, from ~20 min before the last campus class ends (or when the app opens later

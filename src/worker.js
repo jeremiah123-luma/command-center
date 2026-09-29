@@ -680,7 +680,7 @@ async function workersAiChat(env, system, messages, tools, runTool, actions) {
    last reading is 3+ hours old; hard caps SMARTCAR_DAILY_CAP checks a day (default 6) and SMARTCAR_MONTHLY_CAP requests
    a month (default 360, under the free plan's per-vehicle monthly allowance). Smartcar refuses (430 VEHICLE_REQUEST_LIMIT)
    rather than bills when a plan limit is hit; if that ever comes back we stop asking until next month.
-   Secrets: SMARTCAR_CLIENT_ID, SMARTCAR_CLIENT_SECRET. Optional: SMARTCAR_DAILY_CAP, SMARTCAR_MONTHLY_CAP, CAR_MIN_RANGE_MI. */
+   Secrets: SMARTCAR_CLIENT_ID, SMARTCAR_CLIENT_SECRET. Optional: SMARTCAR_DAILY_CAP, SMARTCAR_MONTHLY_CAP, CAR_MIN_PERCENT (default 60). */
 const SC_API = "https://vehicle.api.smartcar.com/v3";
 const SC_SIGNALS = { percent: "tractionbattery-stateofcharge", range: "tractionbattery-range" };
 function etNow(d = new Date(), tz = "America/New_York") {
@@ -753,11 +753,11 @@ async function getCar(env, opt = {}) {
   if (!env.SMARTCAR_CLIENT_ID || !env.SMARTCAR_CLIENT_SECRET) return { ok: false, error: "smartcar_not_configured" };
   const veh = await env.STATE.get("smartcar:vehicle", "json");
   if (!veh || !veh.vehicleId) return { ok: false, error: "smartcar_not_connected" };
-  const minRangeMi = Number(env.CAR_MIN_RANGE_MI || 100);
+  const minPercent = Number(env.CAR_MIN_PERCENT || 60);
   const last = await env.STATE.get("car:reading", "json");
   const age = last ? Date.now() - Date.parse(last.checkedAt) : Infinity;
   const want = opt.force || (opt.onOpen && age >= 3 * 3600e3) || opt.scheduled;
-  const out = r => Object.assign({ ok: true, minRangeMi, model: [veh.year, veh.make, veh.model].filter(Boolean).join(" ") }, r);
+  const out = r => Object.assign({ ok: true, minPercent, model: [veh.year, veh.make, veh.model].filter(Boolean).join(" ") }, r);
   if (!want) return last ? out(last) : out({ percent: null, rangeMi: null, checkedAt: null, charging: false });
   const al = await carAllowance(env);
   if (!al.ok) return last ? out(Object.assign({}, last, { held: al.why })) : out({ percent: null, rangeMi: null, checkedAt: null, charging: false, held: al.why });
@@ -778,7 +778,7 @@ async function getCar(env, opt = {}) {
     return out(reading);
   } catch (e) {
     if (e.status === 430 || /VEHICLE_REQUEST_LIMIT|INVALID_PLAN/.test(e.message)) await env.STATE.put(`car:blocked:${al.t.month}`, e.message, { expirationTtl: 32 * 86400 });
-    return last ? out(Object.assign({}, last, { error: String(e.message || e) })) : { ok: false, error: String(e.message || e), minRangeMi };
+    return last ? out(Object.assign({}, last, { error: String(e.message || e) })) : { ok: false, error: String(e.message || e), minPercent };
   } finally {
     await env.STATE.put(`car:req:${al.t.month}`, String(al.reqs + sent), { expirationTtl: 40 * 86400 });
     await env.STATE.delete("car:busy");
