@@ -366,6 +366,9 @@ export function createPlayer({ canvas, loading, dots, live, chips, bridge }) {
     pod.rotation.set(pitch + Math.sin(step*0.9)*0.04, yaw + Math.sin(step*0.6)*0.1, Math.sin(step*0.7)*0.02);
     pod.position.y = 0.04 + Math.sin(step*1.1)*0.04;
     tilt.x *= Math.pow(0.001, dt); tilt.y *= Math.pow(0.001, dt); wheel.rotation.set(tilt.x, tilt.y, 0);
+    // rocking about the wheel's centre pushed the pressed edge ~0.04 into the body (the wheel only stands ~0.03 proud),
+    // so the white face showed through the disc, rim and icons. Lift it by exactly that much: it pivots on the pressed edge.
+    wheel.position.z = FZ + (WR + 0.03) * (Math.abs(Math.sin(tilt.x)) + Math.abs(Math.sin(tilt.y)));
     press = Math.max(0, press - dt*5); btn.position.z = BTNZ - press*0.009;
     shift = Math.max(0, shift - dt*3);
     post.material.uniforms.uS.value = (0.7 + shift*2.2) * DPR * (REDUCED ? 0.6 : 1);
