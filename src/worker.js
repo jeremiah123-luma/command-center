@@ -820,7 +820,9 @@ async function carCron(env) {
    The front end alternates kinds each time the app opens. Verses: a fixed list of references, text from
    bible-api.com (World English Bible, public domain), cached in KV for good. Substack: there's no public API for
    the "For You" feed, so the pool is recent posts from the publications you subscribe to (SUBSTACK_HANDLE's
-   public profile) plus any feeds in SUBSTACK_FEEDS, refreshed every 6 h. Anything fails → a verse. */
+   public profile) plus any feeds in SUBSTACK_FEEDS, refreshed every 6 h. Two filters keep the lines spiritual,
+   theological or philosophical: SUBSTACK_ALLOW (only those publications are read) and SPIRITUAL_WORDS (a post
+   is skipped unless its title, subtitle or categories mention one). Nothing survives, or anything fails: a verse. */
 const VERSES = [
   "Psalm 46:1", "Joshua 1:9", "Isaiah 40:31", "Proverbs 3:5-6", "Philippians 4:6-7", "Romans 8:28", "Matthew 6:34",
   "Lamentations 3:22-23", "2 Timothy 1:7", "Psalm 23:1-3", "Colossians 3:23", "Isaiah 41:10", "Micah 6:8",
@@ -850,7 +852,21 @@ const VERSE_FALLBACK = [
   { source: "Philippians 4:13", text: "I can do all things through Christ, who strengthens me." },
 ];
 const SUBSTACK_TTL = 6 * 3600e3;
+const SUBSTACK_POOL_KEY = "substack:pool:v2";   // bumped when the filters change so an old pool is not reused
 const UA = { "user-agent": "Mozilla/5.0 (compatible; CommandCenter/1.0; personal dashboard)" };
+// A Substack post makes the pool only if its title, subtitle or RSS categories contain one of these. Each entry
+// matches at the start of a word, so "pray" also matches prayer and praying. Add or remove words freely.
+const SPIRITUAL_WORDS = [
+  "god", "christ", "jesus", "lord", "holy", "spirit", "sacred", "divine", "eternal", "heaven", "soul", "grace", "mercy",
+  "faith", "pray", "worship", "fasting", "fasted", "liturg", "vigil", "rosary", "psalm", "scripture", "bible", "gospel", "apostol",
+  "theolog", "church", "saint", "st.", "orthodox", "catholic", "coptic", "monk", "monaster", "trinity", "incarnat",
+  "resurrect", "creation", "creator", "repent", "forgiv", "sins", "sinner", "sinned", "sinful", "devil", "angel",
+  "suffer", "virtue", "evangel", "our lady", "mother of god", "fatima",
+  "philosoph", "stoic", "ethic", "meaning", "wisdom", "contemplat", "socrates", "plato", "aristotle", "augustine",
+  "aquinas", "chesterton", "lewis",
+];
+const SPIRITUAL_RX = new RegExp("\\b(?:" + SPIRITUAL_WORDS.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")", "i");
+const onTopic = s => SPIRITUAL_RX.test(s);
 
 async function getQuote(env, url) {
   const n = Math.max(0, parseInt(url.searchParams.get("n") || "0", 10) || 0);
@@ -883,10 +899,10 @@ async function verseQuote(env, n) {
 }
 
 async function substackQuote(env) {
-  let pool = await env.STATE.get("substack:pool", "json");
+  let pool = await env.STATE.get(SUBSTACK_POOL_KEY, "json");
   if (!pool || Date.now() - pool.at > SUBSTACK_TTL) {
     const fresh = await buildSubstackPool(env);
-    if (fresh.quotes.length || !pool) { pool = fresh; await env.STATE.put("substack:pool", JSON.stringify(pool)); }
+    if (fresh.quotes.length || !pool) { pool = fresh; await env.STATE.put(SUBSTACK_POOL_KEY, JSON.stringify(pool)); }
   }
   if (!pool.quotes.length) return null;
   // don't show the same line twice in a row
@@ -905,7 +921,10 @@ async function substackFeeds(env) {
     return /\/feed\/?$/.test(s) ? s : s.replace(/\/+$/, "") + "/feed";
   };
   for (const s of String(env.SUBSTACK_FEEDS || "").split(/[\s,]+/)) { const f = toFeed(s); if (f) feeds.add(f); }
-  const handle = String(env.SUBSTACK_HANDLE || "").replace(/^@/, "").trim();
+  // SUBSTACK_ALLOW set: read only those publications and skip the profile's subscriptions altogether.
+  const allow = String(env.SUBSTACK_ALLOW || "").split(/[\s,]+/).map(toFeed).filter(Boolean);
+  for (const f of allow) feeds.add(f);
+  const handle = allow.length ? "" : String(env.SUBSTACK_HANDLE || "").replace(/^@/, "").trim();
   if (handle) {
     try {
       const r = await fetch(`https://substack.com/api/v1/user/${encodeURIComponent(handle)}/public_profile`, { headers: UA });
@@ -936,9 +955,12 @@ async function buildSubstackPool(env) {
         const it = m[1], tag = t => stripCdata((it.match(new RegExp(`<${t}[^>]*>([\\s\\S]*?)</${t}>`)) || [])[1] || "");
         const date = Date.parse(tag("pubDate"));
         if (date && date < monthAgo) continue;
-        const text = pickLine(tag("content:encoded"), decodeEntities(tag("description")));
+        const title = decodeEntities(tag("title")), subtitle = decodeEntities(tag("description"));
+        const cats = [...it.matchAll(/<category[^>]*>([\s\S]*?)<\/category>/g)].map(c => decodeEntities(stripCdata(c[1]))).join(" ");
+        if (!onTopic(`${title} ${subtitle} ${cats}`)) continue;   // off-topic post from an allowed publication
+        const text = pickLine(tag("content:encoded"), subtitle);
         if (!text) continue;
-        out.push({ text, source: decodeEntities(tag("dc:creator")) || pubName, sub: decodeEntities(tag("title")), url: tag("link").trim() });
+        out.push({ text, source: decodeEntities(tag("dc:creator")) || pubName, sub: title, url: tag("link").trim() });
         if (out.length >= 3) break;
       }
       return out;
@@ -958,7 +980,7 @@ function plain(htmlStr) { return decodeEntities(htmlStr.replace(/<[^>]+>/g, " ")
 // A line worth reading on its own: a pull quote if the post has one, else a sentence from the opening paragraphs that
 // doesn't lean on what came before ("This…", "But…"), else the post's subtitle.
 function pickLine(content, subtitle) {
-  const ok = s => s.length >= 50 && s.length <= 240 && !/subscribe|http|click|sign up|paid subscri|podcast|footnote|\[\d+\]/i.test(s);
+  const ok = s => s.length >= 50 && s.length <= 240 && !/subscribe|http|click|sign up|paid subscri|supported publication|podcast|footnote|\[\d+\]/i.test(s);
   for (const m of content.matchAll(/<blockquote[^>]*>([\s\S]*?)<\/blockquote>/g)) { const t = plain(m[1]); if (ok(t)) return t; }
   const paras = [...content.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/g)].map(m => plain(m[1])).filter(Boolean).slice(0, 12);
   const lines = [];
@@ -973,4 +995,4 @@ function pickLine(content, subtitle) {
 function escapeHtml(s) { return String(s).replace(/[&<>"]/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m])); }
 
 // named exports for tests
-export { getCanvas, shortCode, getState, postState, getCommute, spotifyNow, getCar, carCron, smartcarAuthStart, smartcarAuthCallback };
+export { getCanvas, shortCode, getState, postState, getCommute, spotifyNow, getCar, carCron, smartcarAuthStart, smartcarAuthCallback, substackFeeds, buildSubstackPool, onTopic };

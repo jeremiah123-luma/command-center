@@ -37,6 +37,11 @@ SMARTCAR_APPLICATION_ID = "d2698891-a6fe-46e5-91a5-05a3466aa859"
 CHAT_MODEL = "claude-haiku-4-5"
 # The quote on Today: Substack lines come from the publications this profile subscribes to.
 SUBSTACK_HANDLE = "jeremiahsleman"
+# Only these publications feed the quote (handles, domains or feed URLs, comma separated). When set, the profile's
+# other subscriptions are ignored. Picked Oct 2026 from the public likes on the profile above: Catholic and Orthodox
+# writing, theology, and the great books. On top of this, src/worker.js SPIRITUAL_WORDS skips any post whose title
+# or subtitle has none of those themes. Remove the line to go back to every subscription.
+SUBSTACK_ALLOW = "www.adaeternum.com, elijahlamb, seekingheaven, substack.theologymade.com, awholesoul, allthingsromancatholic, theascent, dansonottawa, catholicmanhood, fatherchristopher1, egrunyan"
 
 # Secrets (never in this file). Set each with:  npx wrangler secret put NAME
 #   PIN               the 4-8 digit code you type to unlock the app
@@ -53,6 +58,7 @@ SUBSTACK_HANDLE = "jeremiahsleman"
 #   SUBSTACK_HANDLE = "yourhandle"   your Substack profile name; posts come from the publications you subscribe to
 #                                    (subscriptions must be visible on your public profile)
 #   SUBSTACK_FEEDS  = "noahpinion, www.example.com"   extra publications (subdomain, domain or full feed URL)
+#   SUBSTACK_ALLOW  = "theologymade, www.example.com"  read only these publications (same forms); skips the profile's list
 
 # Warm the Canvas cache twice an hour so the app opens instantly.
 [triggers]
