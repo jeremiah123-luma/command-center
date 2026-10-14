@@ -35,6 +35,8 @@ AI_DAILY_NEURONS = "9000"
 SMARTCAR_APPLICATION_ID = "d2698891-a6fe-46e5-91a5-05a3466aa859"
 # Only used if the optional ANTHROPIC_API_KEY secret is set (paid; replaces Workers AI).
 CHAT_MODEL = "claude-haiku-4-5"
+# The quote on Today: Substack lines come from the publications this profile subscribes to.
+SUBSTACK_HANDLE = "jeremiahsleman"
 
 # Secrets (never in this file). Set each with:  npx wrangler secret put NAME
 #   PIN               the 4-8 digit code you type to unlock the app
