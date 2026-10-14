@@ -4,10 +4,12 @@
 
 Command Center is a personal dashboard web app that puts my Canvas deadlines, Google Calendar, Gmail, live commute times (Google Maps), and Spotify on one screen. It runs at $0/month on free tiers, with API quota caps so costs can't creep up. It is built for one person (me) and sits behind a PIN.
 
+<img src="docs/mac-dashboard.png" alt="Command Center on the Mac: the now sentence and next deadline on the left, the Work departures board and Schedule rail, and the dock at the bottom">
+
 <p align="center">
-  <img src="docs/phone-dashboard.png" width="300" alt="Today screen on iPhone: the now sentence, next deadline, overdue and upcoming work">
-  &nbsp;&nbsp;
-  <img src="docs/phone-player.png" width="300" alt="Now playing sheet on iPhone: the CC-01 3D click-wheel player">
+  <img src="docs/mac-player.png" width="58%" alt="Now playing sheet on the Mac: the CC-01 3D click-wheel player showing the library list">
+  <img src="docs/phone-dashboard.png" width="19%" alt="Today screen on iPhone">
+  <img src="docs/phone-player.png" width="19%" alt="CC-01 player on iPhone">
 </p>
 
 ## Why I built this
