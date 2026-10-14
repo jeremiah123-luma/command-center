@@ -827,6 +827,23 @@ const VERSES = [
   "James 1:5", "Psalm 118:24", "Matthew 11:28-29", "Romans 12:2", "Galatians 6:9", "Psalm 121:1-2", "John 16:33",
   "Proverbs 16:3", "Hebrews 12:1", "1 Corinthians 16:13-14", "Psalm 37:5", "Ecclesiastes 3:1", "John 14:27",
   "Philippians 4:13", "Isaiah 26:3", "Psalm 90:12", "1 Peter 5:7", "Jeremiah 29:11", "Psalm 16:8",
+  "Deuteronomy 31:6", "Psalm 27:1", "Psalm 34:18", "Psalm 55:22", "Psalm 62:1-2", "Psalm 73:26", "Psalm 91:1-2",
+  "Psalm 119:105", "Psalm 139:14", "Psalm 143:8", "Psalm 145:18", "Psalm 147:3", "Psalm 19:14", "Psalm 32:8",
+  "Psalm 37:4", "Psalm 51:10", "Psalm 56:3", "Psalm 84:11", "Psalm 103:2-4", "Psalm 127:1", "Psalm 130:5",
+  "Proverbs 4:23", "Proverbs 9:10", "Proverbs 11:2", "Proverbs 12:25", "Proverbs 15:1", "Proverbs 16:9",
+  "Proverbs 17:17", "Proverbs 18:10", "Proverbs 19:21", "Proverbs 22:1", "Proverbs 27:17", "Ecclesiastes 4:9-10",
+  "Ecclesiastes 9:10", "Isaiah 30:15", "Isaiah 40:28-29", "Isaiah 43:2", "Isaiah 43:18-19", "Isaiah 55:8-9",
+  "Isaiah 58:11", "Jeremiah 17:7-8", "Zephaniah 3:17", "Habakkuk 3:19", "Nahum 1:7", "Exodus 14:14",
+  "Numbers 6:24-26", "1 Samuel 16:7", "2 Chronicles 15:7", "Nehemiah 8:10", "Matthew 5:14-16", "Matthew 5:9",
+  "Matthew 6:33", "Matthew 7:7", "Matthew 19:26", "Matthew 28:20", "Mark 9:23", "Mark 10:27", "Luke 1:37",
+  "Luke 6:31", "Luke 12:25", "John 1:5", "John 8:12", "John 10:10", "John 13:34-35", "John 14:1", "John 15:5",
+  "Acts 20:35", "Romans 5:3-4", "Romans 8:38-39", "Romans 12:12", "Romans 15:13", "1 Corinthians 10:13",
+  "1 Corinthians 13:4-7", "1 Corinthians 15:58", "2 Corinthians 4:16-18", "2 Corinthians 5:7", "2 Corinthians 12:9",
+  "Galatians 5:22-23", "Ephesians 2:10", "Ephesians 3:20", "Ephesians 4:32", "Ephesians 6:10", "Philippians 1:6",
+  "Philippians 3:13-14", "Philippians 4:8", "Colossians 3:12-14", "Colossians 3:15", "1 Thessalonians 5:16-18",
+  "2 Thessalonians 3:13", "1 Timothy 4:12", "2 Timothy 4:7", "Hebrews 10:23", "Hebrews 11:1", "Hebrews 13:8",
+  "James 1:2-4", "James 1:12", "James 1:19", "1 Peter 4:10", "1 Peter 5:10", "2 Peter 3:9", "1 John 4:18",
+  "1 John 4:19", "Revelation 21:4",
 ];
 const VERSE_FALLBACK = [
   { source: "Psalm 46:1", text: "God is our refuge and strength, a very present help in trouble." },
@@ -845,7 +862,7 @@ async function getQuote(env, url) {
 }
 
 async function verseQuote(env, n) {
-  const ref = VERSES[Math.floor(n / 2) % VERSES.length];   // every other open is a verse, so step through the list
+  const ref = VERSES[Math.floor(Math.random() * VERSES.length)];
   const key = `quote:verse:${ref}`;
   const cached = await env.STATE.get(key, "json");
   if (cached) return cached;
