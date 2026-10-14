@@ -15,6 +15,7 @@
  *   GET  /api/canvas   GET /api/calendar   GET /api/gmail   GET /api/state
  *   POST /api/state    { dismiss?: id, note?: text, undismiss?: id, deleteNote?: id }
  *   POST /api/chat     { messages:[{role,content}] }  → { reply }
+ *   GET  /api/quote?kind=verse|substack&n=<open count>  → { text, source, sub, url }
  *   GET  /api/health
  *   everything else → static asset (public/), gated
  */
@@ -66,6 +67,7 @@ export default {
       if (path === "/api/commute") return json(await getCommute(env, url));
       if (path === "/api/spotify/now") return json(await spotifyNow(env));
       if (path === "/api/car") return json(await getCar(env, { onOpen: true }));
+      if (path === "/api/quote") return json(await getQuote(env, url));
       if (path === "/api/spotify/control" && request.method === "POST") return json(await spotifyControl(request, env));
 
       // static dashboard
@@ -812,6 +814,143 @@ async function carCron(env) {
     const r = await getCar(env, { scheduled: true });
     console.log(`car ${name}: ${r.percent ?? "-"}% ${r.rangeMi ?? "-"} mi${r.held ? " (held: " + r.held + ")" : ""}${r.error ? " (" + r.error + ")" : ""}`);
   }
+}
+
+/* ───────────────────────── quote: a Bible verse or a line from a Substack post ─────────────────────────
+   The front end alternates kinds each time the app opens. Verses: a fixed list of references, text from
+   bible-api.com (World English Bible, public domain), cached in KV for good. Substack: there's no public API for
+   the "For You" feed, so the pool is recent posts from the publications you subscribe to (SUBSTACK_HANDLE's
+   public profile) plus any feeds in SUBSTACK_FEEDS, refreshed every 6 h. Anything fails → a verse. */
+const VERSES = [
+  "Psalm 46:1", "Joshua 1:9", "Isaiah 40:31", "Proverbs 3:5-6", "Philippians 4:6-7", "Romans 8:28", "Matthew 6:34",
+  "Lamentations 3:22-23", "2 Timothy 1:7", "Psalm 23:1-3", "Colossians 3:23", "Isaiah 41:10", "Micah 6:8",
+  "James 1:5", "Psalm 118:24", "Matthew 11:28-29", "Romans 12:2", "Galatians 6:9", "Psalm 121:1-2", "John 16:33",
+  "Proverbs 16:3", "Hebrews 12:1", "1 Corinthians 16:13-14", "Psalm 37:5", "Ecclesiastes 3:1", "John 14:27",
+  "Philippians 4:13", "Isaiah 26:3", "Psalm 90:12", "1 Peter 5:7", "Jeremiah 29:11", "Psalm 16:8",
+];
+const VERSE_FALLBACK = [
+  { source: "Psalm 46:1", text: "God is our refuge and strength, a very present help in trouble." },
+  { source: "Philippians 4:13", text: "I can do all things through Christ, who strengthens me." },
+];
+const SUBSTACK_TTL = 6 * 3600e3;
+const UA = { "user-agent": "Mozilla/5.0 (compatible; CommandCenter/1.0; personal dashboard)" };
+
+async function getQuote(env, url) {
+  const n = Math.max(0, parseInt(url.searchParams.get("n") || "0", 10) || 0);
+  if (url.searchParams.get("kind") === "substack") {
+    const q = await substackQuote(env).catch(e => { console.error(`substack: ${e.message || e}`); return null; });
+    if (q) return { ok: true, kind: "substack", ...q };
+  }
+  return { ok: true, kind: "verse", ...(await verseQuote(env, n)) };
+}
+
+async function verseQuote(env, n) {
+  const ref = VERSES[Math.floor(n / 2) % VERSES.length];   // every other open is a verse, so step through the list
+  const key = `quote:verse:${ref}`;
+  const cached = await env.STATE.get(key, "json");
+  if (cached) return cached;
+  try {
+    const r = await fetch(`https://bible-api.com/${encodeURIComponent(ref)}?translation=web`, { headers: UA });
+    if (r.ok) {
+      const d = await r.json();
+      const text = String(d.text || "").replace(/\s+/g, " ").trim();
+      if (text) {
+        const v = { text, source: ref, sub: "WEB", url: `https://www.biblegateway.com/passage/?search=${encodeURIComponent(ref)}&version=WEB` };
+        await env.STATE.put(key, JSON.stringify(v));
+        return v;
+      }
+    }
+  } catch (e) {}
+  const f = VERSE_FALLBACK[n % VERSE_FALLBACK.length];
+  return { ...f, sub: "WEB", url: "" };
+}
+
+async function substackQuote(env) {
+  let pool = await env.STATE.get("substack:pool", "json");
+  if (!pool || Date.now() - pool.at > SUBSTACK_TTL) {
+    const fresh = await buildSubstackPool(env);
+    if (fresh.quotes.length || !pool) { pool = fresh; await env.STATE.put("substack:pool", JSON.stringify(pool)); }
+  }
+  if (!pool.quotes.length) return null;
+  // don't show the same line twice in a row
+  const last = await env.STATE.get("substack:last");
+  const others = pool.quotes.filter(q => q.text !== last), choices = others.length ? others : pool.quotes;
+  const q = choices[Math.floor(Math.random() * choices.length)];
+  await env.STATE.put("substack:last", q.text);
+  return q;
+}
+
+async function substackFeeds(env) {
+  const feeds = new Set();
+  const toFeed = s => {
+    s = s.trim(); if (!s) return null;
+    if (!/^https?:\/\//.test(s)) s = s.includes(".") ? `https://${s}` : `https://${s}.substack.com`;
+    return /\/feed\/?$/.test(s) ? s : s.replace(/\/+$/, "") + "/feed";
+  };
+  for (const s of String(env.SUBSTACK_FEEDS || "").split(/[\s,]+/)) { const f = toFeed(s); if (f) feeds.add(f); }
+  const handle = String(env.SUBSTACK_HANDLE || "").replace(/^@/, "").trim();
+  if (handle) {
+    try {
+      const r = await fetch(`https://substack.com/api/v1/user/${encodeURIComponent(handle)}/public_profile`, { headers: UA });
+      if (r.ok) {
+        const p = await r.json();
+        for (const sub of p.subscriptions || []) {
+          const pub = sub.publication || {};
+          const f = pub.subdomain ? toFeed(pub.subdomain) : pub.custom_domain ? toFeed(pub.custom_domain) : null;
+          if (f) feeds.add(f);
+        }
+      } else console.error(`substack profile ${handle}: HTTP ${r.status}`);
+    } catch (e) { console.error(`substack profile: ${e.message || e}`); }
+  }
+  return [...feeds].sort(() => Math.random() - 0.5).slice(0, 15);   // keep each refresh to 16 requests at most
+}
+
+async function buildSubstackPool(env) {
+  const feeds = await substackFeeds(env);
+  const monthAgo = Date.now() - 30 * 86400e3;
+  const lists = await Promise.all(feeds.map(async f => {
+    try {
+      const r = await fetch(f, { headers: UA, signal: AbortSignal.timeout(8000) });
+      if (!r.ok) return [];
+      const xml = await r.text();
+      const pubName = decodeEntities(stripCdata((xml.match(/<channel>[\s\S]*?<title>([\s\S]*?)<\/title>/) || [])[1] || ""));
+      const out = [];
+      for (const m of xml.matchAll(/<item>([\s\S]*?)<\/item>/g)) {
+        const it = m[1], tag = t => stripCdata((it.match(new RegExp(`<${t}[^>]*>([\\s\\S]*?)</${t}>`)) || [])[1] || "");
+        const date = Date.parse(tag("pubDate"));
+        if (date && date < monthAgo) continue;
+        const text = pickLine(tag("content:encoded"), decodeEntities(tag("description")));
+        if (!text) continue;
+        out.push({ text, source: decodeEntities(tag("dc:creator")) || pubName, sub: decodeEntities(tag("title")), url: tag("link").trim() });
+        if (out.length >= 3) break;
+      }
+      return out;
+    } catch (e) { return []; }
+  }));
+  const seen = new Set();
+  return { at: Date.now(), quotes: lists.flat().filter(q => !seen.has(q.text) && seen.add(q.text)) };
+}
+
+function stripCdata(s) { return s.replace(/^\s*<!\[CDATA\[/, "").replace(/\]\]>\s*$/, ""); }
+function decodeEntities(s) {
+  const named = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", rsquo: "’", lsquo: "‘", rdquo: "”", ldquo: "“", mdash: "—", ndash: "–", hellip: "…" };
+  return String(s).replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (all, e) =>
+    e[0] === "#" ? String.fromCodePoint(e[1] === "x" || e[1] === "X" ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10)) : named[e.toLowerCase()] ?? all);
+}
+function plain(htmlStr) { return decodeEntities(htmlStr.replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim(); }
+// A line worth reading on its own: a pull quote if the post has one, else a sentence from the opening paragraphs that
+// doesn't lean on what came before ("This…", "But…"), else the post's subtitle.
+function pickLine(content, subtitle) {
+  const ok = s => s.length >= 50 && s.length <= 240 && !/subscribe|http|click|sign up|paid subscri|podcast|footnote|\[\d+\]/i.test(s);
+  for (const m of content.matchAll(/<blockquote[^>]*>([\s\S]*?)<\/blockquote>/g)) { const t = plain(m[1]); if (ok(t)) return t; }
+  const paras = [...content.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/g)].map(m => plain(m[1])).filter(Boolean).slice(0, 12);
+  const lines = [];
+  for (const p of paras) for (const s of p.match(/[^.!?]+[.!?]+["”’)]*/g) || []) {
+    const t = s.trim();
+    if (ok(t) && /^[A-Z“"]/.test(t) && !/^(This|That|These|Those|It|He|She|They|But|And|So|Or|Also|Here|There|Then|Which|As)\b/.test(t) && !/\?$/.test(t)) lines.push(t);
+  }
+  if (lines.length) return lines[Math.floor(Math.random() * lines.length)];
+  return ok(subtitle) ? subtitle : null;
 }
 
 function escapeHtml(s) { return String(s).replace(/[&<>"]/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m])); }

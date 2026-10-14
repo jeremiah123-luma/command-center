@@ -65,7 +65,7 @@ new_boot = r'''
   dbRef={ doc:function(path){ return { set:function(data){ if(path==="canvas/ignored"){ var newest=(data.ids||[]).filter(function(id){return ignored.indexOf(id)<0;}); return Promise.all(newest.map(function(id){return api("/api/state",{method:"POST",body:JSON.stringify({dismiss:id})});})).then(loadState); } return Promise.resolve(); } }; } };
   function refreshAll(){ loadState().then(function(){ loadCanvas(false); }); loadCalendar(); loadGmail(); }
   tick(); refreshAll();
-  CC.standalone=true; startCommute(api); startSpotify(api); startCar(api);   // live traffic, Spotify and the car go through this app's Worker
+  CC.standalone=true; startCommute(api); startSpotify(api); startCar(api); startQuote(api);   // live traffic, Spotify, the car and the quote go through this app's Worker
   setInterval(function(){ if(document.visibilityState==="visible") refreshAll(); },5*60000);
   document.addEventListener("visibilitychange",function(){ if(document.visibilityState==="visible") refreshAll(); });
   if(location.search.indexOf("connected=google")>-1) history.replaceState(null,"",location.pathname);
@@ -154,8 +154,8 @@ new_script = before_boot + new_boot + pager
 new_script = new_script.replace('" — hourly sync may have stalled"', '" — server cache may be stale"')
 new_script = new_script.replace('var el=$("cv-sync"); if(!canvas){el.textContent="";return;}', 'var el=$("cv-sync"); if(!canvas||!canvas.updatedAt){el.textContent="";return;}')
 
-# lock: a quiet "Lock" at the bottom of Today (the dock owns the bottom edge of the screen now)
-AFTER = '<div class="stack gap-l" id="after" hidden></div>'
+# lock: a quiet "Lock" at the bottom of Today, under the quote (the dock owns the bottom edge of the screen now)
+AFTER = '<a id="q-src" target="_blank" rel="noopener"></a></figcaption>\n        </figure>'
 assert markup.count(AFTER) == 1, "Today markup changed: update the lock anchor in build_frontend.py"
 markup = markup.replace(AFTER, AFTER + '\n        <form method="post" action="/logout" class="lock-form"><button type="submit" class="logout">Lock</button></form>')
 

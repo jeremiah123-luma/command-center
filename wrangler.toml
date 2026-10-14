@@ -47,6 +47,10 @@ CHAT_MODEL = "claude-haiku-4-5"
 #   SMARTCAR_CLIENT_SECRET
 # Optional plain settings (add under [vars] to change): SMARTCAR_DAILY_CAP (checks/day, default 6),
 #   SMARTCAR_MONTHLY_CAP (Smartcar requests/month, default 360), CAR_MIN_PERCENT (charge you want before a class day, default 60)
+# The quote on Today (alternates a Bible verse and a line from a Substack post): add under [vars]
+#   SUBSTACK_HANDLE = "yourhandle"   your Substack profile name; posts come from the publications you subscribe to
+#                                    (subscriptions must be visible on your public profile)
+#   SUBSTACK_FEEDS  = "noahpinion, www.example.com"   extra publications (subdomain, domain or full feed URL)
 
 # Warm the Canvas cache twice an hour so the app opens instantly.
 [triggers]

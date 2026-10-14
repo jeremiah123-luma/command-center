@@ -221,6 +221,13 @@
   /* ══ TODAY ══ three answers, top to bottom: when to leave · what's due next · what's after that */
   .today{grid-column:span 12;position:relative;max-width:560px;padding:14px 2px 32px;color:#F2F2F2;font-size:15px}
   .today .lead.hot em{color:var(--o)}
+  /* a quote at the bottom of Today: a verse or a line from a Substack post. Quiet: no accent colour, it's not an action */
+  .quote{margin:40px 0 0;padding-top:20px;border-top:1px solid var(--line);max-width:480px;animation:qin .6s var(--ease) both}
+  .quote blockquote{margin:0 0 12px;font-family:var(--serif);font-size:19px;line-height:1.3;letter-spacing:-.005em;color:var(--ink-2);text-wrap:pretty}
+  .quote blockquote::before{content:"“"} .quote blockquote::after{content:"”"}
+  .quote a{text-decoration:none} .quote a[href]:hover{color:var(--ink)}
+  @keyframes qin{from{opacity:0}}
+  @media (prefers-reduced-motion:reduce){ .quote{animation:none} }
   #hero-meta{color:rgba(255,255,255,.72)}
   @media (min-width:821px){ .today{padding:36px 24px 64px} }
   @media (min-width:1100px){ .today{padding-bottom:140px} }
@@ -404,6 +411,10 @@
           <a class="cta" id="hero-cta" target="_blank" rel="noopener" hidden><span>Open in Canvas</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg></a>
         </div>
         <div class="stack gap-l" id="after" hidden></div>
+        <figure class="quote" id="quote" hidden>
+          <blockquote id="q-text"></blockquote>
+          <figcaption class="lbl"><a id="q-src" target="_blank" rel="noopener"></a></figcaption>
+        </figure>
       </section>
     </div>
 
@@ -1227,6 +1238,27 @@
     var say="i4: "+c.percent+"% battery, "+(c.rangeMi!=null?c.rangeMi+" miles of range":"range unknown")+(c.charging?", charging":"")+(nag?". "+nag+": aim for "+(c.minPercent||60)+"% before class":"")+(when?" ("+when+")":"");
     return '<span class="kchip'+(nag?' act':'')+'" title="'+esc(say)+'" aria-label="'+esc(say)+'"><span class="dot '+(nag?'':c.charging?'g':'n')+'"></span>i4 · '+c.percent+'%'+(c.rangeMi!=null?' · '+c.rangeMi+' mi':'')+(c.charging?' · charging':'')+(nag?' · '+nag:'')+'</span>'; }
 
+  /* ── a quote on Today: a Bible verse and a line from a Substack post take turns, one per open (a fresh load, or coming
+       back after 30+ min away). The open count lives in cc.quote; the Worker picks the line (/api/quote). ── */
+  function startQuote(apiFn){
+    var away=0;
+    async function next(){
+      var n=0; try{ n=(+localStorage.getItem("cc.quote")||0)+1; localStorage.setItem("cc.quote",String(n)); }catch(e){ n=Math.floor(Math.random()*64); }
+      try{
+        var d=await apiFn("/api/quote?kind="+(n%2?"verse":"substack")+"&n="+n); if(!d||!d.ok||!d.text) return;
+        var fig=$("quote"), src=$("q-src");
+        $("q-text").textContent=d.text.replace(/^[“"]+|[”"]+$/g,"");
+        src.textContent=[d.source,d.sub].filter(Boolean).join(" · ")+(d.url?" ↗":"");
+        if(d.url) src.href=d.url; else src.removeAttribute("href");
+        fig.hidden=false; fig.style.animation="none"; void fig.offsetWidth; fig.style.animation="";
+      }catch(e){}
+    }
+    next();
+    document.addEventListener("visibilitychange",function(){
+      if(document.visibilityState==="hidden") away=Date.now();
+      else if(away&&Date.now()-away>30*60000){ away=0; next(); }
+    });
+  }
   function startCommute(apiFn){ commuteApi=apiFn; refreshCommute(true); refreshHome(); setInterval(function(){ if(document.visibilityState!=="hidden"){ refreshCommute(); refreshHome(); } },5*60000); }
   // the drive home: one traffic check per day, from ~20 min before the last campus class ends (or when the app opens later
   // that evening). The Worker caches the answer for 12 h, so reloads don't ask Google again. Falls back to "about 45 min".
@@ -1612,7 +1644,7 @@
         cols.forEach(function(c){ c.addEventListener("scroll",colSpy,{passive:true}); });
         grid.classList.add("cols"); document.body.classList.add("mac");
       } else if(!wide.matches&&cols){
-        panels.forEach(function(pg){ grid.appendChild(pg); }); if(lockF&&after) after.parentNode.insertBefore(lockF,after.nextSibling);
+        panels.forEach(function(pg){ grid.appendChild(pg); }); if(lockF&&after){ var q=$("quote")||after; q.parentNode.insertBefore(lockF,q.nextSibling); }
         cols.forEach(function(c){ c.remove(); }); cols=null; grid.classList.remove("cols"); document.body.classList.remove("mac");
       }
     }
