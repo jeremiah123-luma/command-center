@@ -1,4 +1,24 @@
+# dependencies / build
 node_modules/
 .wrangler/
+
+# secrets and local config (never commit)
 .dev.vars
+.dev.vars.*
+!.dev.vars.example
+.env
+.env.*
+*.env
+
+# python
+__pycache__/
+*.pyc
+
+# editors / OS
 .DS_Store
+.idea/
+.vscode/
+
+# anything exported from the live app (assignments, mail, calendar snapshots)
+*.snapshot.json
+snapshots/
