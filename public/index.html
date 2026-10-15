@@ -238,10 +238,10 @@
   .today{grid-column:span 12;position:relative;max-width:560px;padding:14px 2px 32px;color:#F2F2F2;font-size:15px}
   .today .lead.hot em{color:var(--o)}
   /* a quote at the bottom of Today: a verse or a line from a Substack post. Quiet: no accent colour, it's not an action */
-  .quote{margin:40px 0 0;padding-top:20px;border-top:1px solid var(--line);max-width:480px;animation:qin .6s var(--ease) both}
-  .quote blockquote{margin:0 0 12px;font-family:var(--serif);font-style:italic;font-size:19px;line-height:1.3;letter-spacing:-.005em;color:var(--ink-2);text-wrap:pretty}
+  .quote{margin:40px 0 0;padding-top:20px;border-top:1px solid var(--line);max-width:min(480px,100%);min-width:0;animation:qin .6s var(--ease) both}
+  .quote blockquote{margin:0 0 12px;font-family:var(--serif);font-style:italic;font-size:19px;line-height:1.3;letter-spacing:-.005em;color:var(--ink-2);text-wrap:pretty;white-space:normal;overflow-wrap:anywhere}
   .quote blockquote::before{content:"“"} .quote blockquote::after{content:"”"}
-  .quote a{text-decoration:none} .quote a[href]:hover{color:var(--ink)}
+  .quote a{text-decoration:none;overflow-wrap:anywhere} .quote a[href]:hover{color:var(--ink)}
   @keyframes qin{from{opacity:0}}
   @media (prefers-reduced-motion:reduce){ .quote{animation:none} }
   #hero-meta{color:rgba(255,255,255,.72)}
@@ -388,9 +388,14 @@
     .wrap{flex:1;min-height:0;min-width:0;width:100%;display:flex;flex-direction:column;padding-block:0}
     .board{flex:1;min-height:0;display:flex;border:0;margin-inline:calc(var(--gut) * -1);padding-inline:var(--gut);gap:var(--gut);scroll-padding-inline:var(--gut);overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scrollbar-width:none}
     .board::-webkit-scrollbar{display:none}
-    .board > .page{flex:0 0 100%;width:100%;min-width:0;scroll-snap-align:start;scroll-snap-stop:always;height:100%;display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior-y:contain;scrollbar-width:none;border-top:1px solid var(--line);border-left:1px solid var(--line);padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))}
+    /* a page scrolls up and down only: overflow-x hidden, so nothing inside can ever make it pan sideways (the swipe between
+       pages belongs to .board). The chips rows bleed only as far as the screen's 2px side padding here; the 16px bleed is for
+       the wider layouts, and on the phone it stuck 14px past the page and made iOS pan and rubber-band in both axes. */
+    .board > .page{flex:0 0 100%;width:100%;min-width:0;scroll-snap-align:start;scroll-snap-stop:always;height:100%;display:flex;flex-direction:column;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain;scrollbar-width:none;border-top:1px solid var(--line);border-left:1px solid var(--line);padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))}
     .board > .page::-webkit-scrollbar{display:none}
     .board > .page.p-k{border:0;padding-bottom:0}
+    .board > .page > *{max-width:100%;min-width:0}
+    .today .kchips,.kscreen .kchips{margin-inline:-2px;padding-inline:2px}
     .today,.kscreen{padding-bottom:calc(128px + env(safe-area-inset-bottom,0px))}
     .foot{display:none}
     .dock{bottom:var(--dockb)}
