@@ -21,7 +21,7 @@ pager = pager.rsplit("})();\n", 1)[0] + "})();\n"   # drop the outer IIFE close;
 
 new_boot = r'''
   /* ══════════════════════════════════════════════
-     DATA LAYER — standalone: everything comes from this app's own /api
+     DATA LAYER: standalone: everything comes from this app's own /api
      ══════════════════════════════════════════════ */
   var notes=[], chatEnabled=false, googleConnected=true;
   async function api(path,opts){
@@ -40,7 +40,7 @@ new_boot = r'''
       if(d.error==="canvas_token_invalid"){ canvasState("Canvas token expired","Generate a new one in Canvas → Settings, then re-run wrangler secret put CANVAS_TOKEN.","",function(){loadCanvas(true);}); return; }
       if(!d.items || (d.ok===false && !d.stale)){ canvasState("Canvas unavailable",d.error||"No data returned.","",function(){loadCanvas(true);}); return; }
       canvas=d; renderCanvas();
-      if(d.stale) $("cv-sync").textContent="⚠ showing cached data — "+(d.error||"Canvas unreachable");
+      if(d.stale) $("cv-sync").textContent="⚠ showing cached data: "+(d.error||"Canvas unreachable");
     }catch(e){ if(String(e.message)!=="unauthorized") canvasState("Canvas unavailable",String(e.message||e),"",function(){loadCanvas(true);}); }
   }
   async function loadCalendar(){
@@ -72,7 +72,7 @@ new_boot = r'''
   if("serviceWorker" in navigator){ navigator.serviceWorker.register("/sw.js").catch(function(){}); }
 
   /* ══════════════════════════════════════════════
-     COMMS LINK — real microphone (no viewer frame here) → /api/chat
+     COMMS LINK: real microphone (no viewer frame here) → /api/chat
      ══════════════════════════════════════════════ */
   (function(){
     var mic=$("mic"), drawer=$("voice"), log=$("voice-log"), status=$("voice-status"),
@@ -87,7 +87,7 @@ new_boot = r'''
 
     function setStatus(t,cls){ status.textContent=t; status.className="status"+(cls?" "+cls:""); }
     function addMsg(cls,text){ var d=document.createElement("div"); d.className="msg "+cls; d.textContent=text; log.appendChild(d); log.scrollTop=log.scrollHeight; return d; }
-    function openDrawer(){ CC.openSheet(drawer); if(!log.children.length) addMsg("sys", chatEnabled ? "Link open · ask what's due, tell me things, or “dismiss …”" : "Answers are off here — anything you say is saved as a note."); }
+    function openDrawer(){ CC.openSheet(drawer); if(!log.children.length) addMsg("sys", chatEnabled ? "Link open · ask what's due, tell me things, or “dismiss …”" : "Answers are off here: anything you say is saved as a note."); }
     function closeDrawer(){ CC.closeSheet(drawer); if(listening&&rec) rec.stop(); }
     $("voice-close").addEventListener("click",closeDrawer);
     CC.on("sheetclose",function(el){ if(el===drawer&&listening&&rec) rec.stop(); });
@@ -118,7 +118,7 @@ new_boot = r'''
             if((res.actions||[]).length){ await loadState(); }
           }
         }
-      }catch(e){ bubble.textContent=e.name==="AbortError"?"(stopped)":"Connection hiccup — try again."; setStatus("Standing by"); turns.pop(); }
+      }catch(e){ bubble.textContent=e.name==="AbortError"?"(stopped)":"Connection hiccup: try again."; setStatus("Standing by"); turns.pop(); }
       finally{ busy=false; ctl=null; mic.classList.remove("thinking"); stopBtn.hidden=true; $("voice-send").disabled=false; }
     }
     stopBtn.addEventListener("click",function(){ if(ctl) ctl.abort(); if(window.speechSynthesis) speechSynthesis.cancel(); });
@@ -135,7 +135,7 @@ new_boot = r'''
       rec.onstart=function(){ listening=true; mic.classList.add("listening"); setStatus("Listening","live"); };
       rec.onresult=function(ev){ var s=""; for(var i=ev.resultIndex;i<ev.results.length;i++){ s+=ev.results[i][0].transcript; if(ev.results[i].isFinal) finalText+=ev.results[i][0].transcript; } interim.textContent=(finalText||s||"listening…"); };
       rec.onerror=function(ev){ listening=false; mic.classList.remove("listening"); interim.remove();
-        if(ev.error==="not-allowed"||ev.error==="service-not-allowed"){ addMsg("sys","Microphone permission denied — allow it in your browser settings for this site, or use the keyboard mic key."); input.focus(); }
+        if(ev.error==="not-allowed"||ev.error==="service-not-allowed"){ addMsg("sys","Microphone permission denied: allow it in your browser settings for this site, or use the keyboard mic key."); input.focus(); }
         else addMsg("sys", ev.error==="no-speech"?"Didn't catch that.":"Mic error: "+ev.error);
         setStatus("Standing by"); };
       rec.onend=function(){ if(this.typed){ listening=false; mic.classList.remove("listening"); clearInterim(); return; }  listening=false; mic.classList.remove("listening"); var t=(finalText||interim.textContent||"").trim(); interim.remove(); if(t&&t!=="listening…"){ setStatus("Heard you"); ask(t); } else setStatus("Standing by"); };
@@ -151,7 +151,7 @@ new_script = before_boot + new_boot + pager
 
 # ---- small render-layer tweaks for the standalone build ----
 # sync line copy: server caches 10 min, cron warms every 30
-new_script = new_script.replace('" — hourly sync may have stalled"', '" — server cache may be stale"')
+new_script = new_script.replace('": the 30-minute sync may have stalled"', '": server cache may be stale"')
 new_script = new_script.replace('var el=$("cv-sync"); if(!canvas){el.textContent="";return;}', 'var el=$("cv-sync"); if(!canvas||!canvas.updatedAt){el.textContent="";return;}')
 
 # lock: a quiet "Lock" at the bottom of Today, under the quote (the dock owns the bottom edge of the screen now)

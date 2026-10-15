@@ -18,7 +18,7 @@ Between Canvas, my calendar, my email, and figuring out when I actually needed t
 
 ## What's on the screen
 
-- **Today:** one plain-language sentence ("Leave by 7:35 for English 102 at 8:30."), the next thing due, and what's after that. Chips for drive time, rain, and the next exam.
+- **Today:** one plain-language sentence ("Leave by 7:35 for English 102 at 8:30."), the next thing due, and what's after that. Chips for drive time, rain, and the next exam. A quote under it takes turns between a Bible verse and a line from a Substack post.
 - **Work:** a split-flap departures board showing the next assignment out, then everything due, grouped by day, with progress pills for homework that reports a partial score.
 - **Schedule:** a timeline rail with a "now" line, drives placed on the rail ("Leave for NJIT", "Head home"), and day chips for the next two weeks.
 - **Inbox:** unread Gmail, important first.
@@ -58,7 +58,7 @@ Phone / Mac (PWA) ◄──── src/worker.js (Cloudflare Worker) ◄───
 
 - **JavaScript** (Cloudflare Workers, Workers KV, Workers AI, three.js for the player)
 - **Python** (`scripts/canvas_sync.py`, `build_frontend.py`)
-- **REST APIs:** Canvas, Google Calendar, Gmail, Google Routes, Spotify, Open-Meteo, Smartcar
+- **REST APIs:** Canvas, Google Calendar, Gmail, Google Routes, Spotify, Open-Meteo, Substack RSS (Smartcar is coded but blocked; see the roadmap)
 - **OAuth 2.0** for Google and Spotify (refresh tokens stored in KV)
 - **GitHub Actions** for the scheduled Canvas sync
 - **PWA** (web manifest, service worker, add-to-home-screen on iOS)
@@ -90,6 +90,8 @@ Set `CANVAS_BASE` in `wrangler.toml` to your school's Canvas URL. Then, optional
 | Live drive time | `GOOGLE_MAPS_KEY`, `HOME_ADDRESS`, optional `CAMPUS_ADDRESS` | API key restricted to the Routes API |
 | Weather at home | `HOME_LATLON` ("lat,lon") | Read by `/api/places`, so no location is ever in the code |
 | Spotify | `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` | Spotify developer dashboard, redirect `https://<your-worker>/auth/spotify/callback` |
+| Substack quote | `SUBSTACK_HANDLE`, optional `SUBSTACK_ALLOW` (comma-separated publications) | Your public Substack profile name |
+| Talk | optional `OWNER_NAME` (what Talk calls you); optional paid `ANTHROPIC_API_KEY` | Workers AI is used by default, free |
 | Canvas sync via GitHub Actions | repo secrets `CANVAS_TOKEN`, `INGEST_URL`, `INGEST_SECRET`; Worker secret `INGEST_SECRET` | `INGEST_URL` is `https://<your-worker>/api/canvas/ingest` |
 
 Local dev: `cp .dev.vars.example .dev.vars`, fill it in, `npm run dev`. Tests: `npm test` (offline; fetch and KV are faked), and the same check runs on every push. Edit the UI in `dashboard.source.html`, then `python3 build_frontend.py`.

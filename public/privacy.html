@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Command Center — Privacy Policy</title>
+<title>Command Center: Privacy Policy</title>
 <style>
   body { font: 16px/1.6 -apple-system, system-ui, sans-serif; max-width: 42rem; margin: 0 auto; padding: 2rem 1rem; color: #1a1a1a; background: #fff; }
   h1 { font-size: 1.6rem; } h2 { font-size: 1.1rem; margin-top: 2rem; }
@@ -11,8 +11,8 @@
 </style>
 </head>
 <body>
-<h1>Command Center — Privacy Policy</h1>
-<p>Effective September 21, 2026.</p>
+<h1>Command Center: Privacy Policy</h1>
+<p>Effective September 21, 2026. Updated October 15, 2026.</p>
 
 <p>Command Center is a personal dashboard built and used by a single person. It is not offered to the public, and only its owner can sign in. This policy describes what data the app touches and what happens to it.</p>
 
@@ -21,6 +21,14 @@
   <li><strong>Google Calendar</strong> (read-only): event titles, times and locations, to show the owner's schedule.</li>
   <li><strong>Gmail</strong> (read-only): for unread inbox messages from the last 14 days, the sender, subject line, snippet, timestamp and Important label, to show an unread list. Message bodies and attachments are not requested.</li>
   <li><strong>Canvas (school LMS)</strong>: assignment names, due dates and submission status, to show coursework.</li>
+  <li><strong>Spotify</strong>: the currently playing track and playback controls, through the owner's own Spotify login.</li>
+</ul>
+<h2>Other services the app sends requests to</h2>
+<ul>
+  <li><strong>Google Routes API</strong>: the owner's home and campus addresses, to get live drive times.</li>
+  <li><strong>Open-Meteo</strong>: the campus and home coordinates, to get the weather.</li>
+  <li><strong>Cloudflare Workers AI</strong>: when the owner uses Talk, the question plus a short summary of coursework, calendar, unread subjects and notes, so the answer comes from the owner's own data. (Only if an Anthropic API key is configured does this go to Anthropic instead.)</li>
+  <li><strong>Substack</strong>: public RSS feeds of publications, for the daily quote. Nothing about the owner is sent.</li>
 </ul>
 <p>The app requests only the read-only scopes <code>calendar.readonly</code> and <code>gmail.readonly</code>. It cannot send, change, delete or label anything in your Google account.</p>
 
@@ -28,7 +36,7 @@
 <p>The app stores the following in Cloudflare Workers KV, in the owner's own Cloudflare account: the Google OAuth refresh token and a short-lived access token, the latest Canvas snapshot, the owner's notes, and the items the owner has dismissed. Calendar and Gmail content is fetched on demand to display it and is not saved.</p>
 
 <h2>Sharing</h2>
-<p>Data is not sold, shared with third parties, used for advertising, or used to train any model. It is sent only to the owner's own browser. The app is hosted on Cloudflare, which processes requests on the owner's behalf.</p>
+<p>Data is not sold, shared with third parties, used for advertising, or used to train any model. Apart from the requests listed above, it is sent only to the owner's own browser. The app is hosted on Cloudflare, which processes requests on the owner's behalf.</p>
 
 <h2>Google API Services User Data Policy</h2>
 <p>Command Center's use and transfer of information received from Google APIs adheres to the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, including the Limited Use requirements.</p>

@@ -1,22 +1,22 @@
 /**
- * Command Center — standalone backend (Cloudflare Worker)
+ * Command Center: standalone backend (Cloudflare Worker)
  *
- * One file, five jobs:
- *   1. Gate everything behind a PIN (signed cookie session)
- *   2. Google OAuth once, then read Calendar + Gmail with the stored refresh token
- *   3. Read Canvas (planner items with submission status), cached 10 min
- *   4. Keep small state: dismissed item ids + voice notes (KV)
- *   5. Chat: /api/chat → Cloudflare Workers AI (free daily allowance) with two tools (dismiss, note);
- *      the Anthropic API instead only if ANTHROPIC_API_KEY is set
+ * One file. It gates everything behind a PIN (signed cookie session), reads Canvas, Google Calendar,
+ * Gmail, Spotify, and Google Routes, keeps small state in KV, and answers Talk with Cloudflare Workers AI
+ * (free daily allowance), or the Anthropic API only if ANTHROPIC_API_KEY is set.
  *
- * Routes
- *   GET  /login, POST /login, POST /logout
- *   GET  /auth/google  → Google consent   GET /auth/google/callback → stores refresh token
- *   GET  /api/canvas   GET /api/calendar   GET /api/gmail   GET /api/state
- *   POST /api/state    { dismiss?: id, note?: text, undismiss?: id, deleteNote?: id }
- *   POST /api/chat     { messages:[{role,content}] }  → { reply }
- *   GET  /api/quote?kind=verse|substack&n=<open count>  → { text, source, sub, url }
- *   GET  /api/health
+ * Public routes
+ *   /login, /logout, /privacy, /terms, /api/health
+ *   POST /api/canvas/ingest      the GitHub Actions fallback; needs the x-ingest-secret header
+ *   /manifest.webmanifest, /sw.js, /icons/*
+ *
+ * Behind the PIN
+ *   /auth/google, /auth/spotify, /auth/smartcar (+ /callback)   one-time OAuth
+ *   GET  /api/canvas  /api/calendar  /api/gmail  /api/commute  /api/places  /api/car
+ *   GET  /api/spotify/now     POST /api/spotify/control
+ *   GET  /api/state           POST /api/state { dismiss?, note?, undismiss?, deleteNote? }
+ *   POST /api/chat { messages:[{role,content}] } → { reply }
+ *   GET  /api/quote?kind=verse|substack&n=<open count> → { text, source, sub, url }
  *   everything else → static asset (public/), gated
  */
 
@@ -34,7 +34,7 @@ export default {
       if (path === "/api/health") return json({ ok: true, time: new Date().toISOString() });
       // Fallback ingest: an external runner POSTs the Canvas snapshot here. Auth = shared secret header, not the PIN cookie.
       if (path === "/api/canvas/ingest" && request.method === "POST") {
-        if (!env.INGEST_SECRET || request.headers.get("x-ingest-secret") !== env.INGEST_SECRET) return json({ error: "forbidden" }, 403);
+        if (!env.INGEST_SECRET || !timingSafeEqual(request.headers.get("x-ingest-secret") || "", String(env.INGEST_SECRET))) return json({ error: "forbidden" }, 403);
         const snap = await request.json().catch(() => null);
         if (!snap || !Array.isArray(snap.items)) return json({ error: "bad snapshot" }, 400);
         snap.ok = true; snap.updatedAt = snap.updatedAt || new Date().toISOString(); snap.source = "ingest";
@@ -381,9 +381,10 @@ const AI_RATES = {
   "@cf/meta/llama-4-scout-17b-16e-instruct": [24545, 77273],
 };
 const AI_DEFAULT_MODEL = "@cf/qwen/qwen3-30b-a3b-fp8";
-const OUT_OF_FREE = "Out of free answers for today — saved as a note.";
+const OUT_OF_FREE = "Out of free answers for today: saved as a note.";
 
 async function chat(request, env) {
+  const OWNER = env.OWNER_NAME || "the owner"; // what Talk calls you; a secret so the repo stays generic
   if (!env.ANTHROPIC_API_KEY && !env.AI) return json({ error: "chat_disabled" }, 501);
   const body = await request.json().catch(() => ({}));
   const messages = Array.isArray(body.messages) ? body.messages.slice(-12) : [];
@@ -396,18 +397,18 @@ async function chat(request, env) {
   const live = (canvas.items || []).filter(x => !state.ignored.includes(x.id) && !(x.type === "discussion_topic" && x.points == null) && !x.submitted && !x.excused).slice(0, 25);
   const data = [
     `NOW: ${fmt(now)} (${env.TIMEZONE})`,
-    "\nCANVAS — open coursework (id | course | title | due | pts | state):",
+    "\nCANVAS: open coursework (id | course | title | due | pts | state):",
     ...(live.length ? live.map(x => `  ${x.id} | ${x.course} | ${x.title} | ${x.dueAt ? fmt(x.dueAt) : "no due date"} | ${x.points ?? "-"} | ${x.dueAt && new Date(x.dueAt) < now ? "OVERDUE" : "open"}`) : ["  (nothing open)"]),
-    "\nCALENDAR — next 3 days:",
+    "\nCALENDAR: next 3 days:",
     ...((cal.events || []).filter(e => e.start?.dateTime && new Date(e.start.dateTime) < new Date(now.getTime() + 3 * 86400000)).slice(0, 16).map(e => `  ${fmt(e.start.dateTime)} | ${e.summary}${e.location ? " | " + e.location : ""}`)),
-    "\nINBOX — unread (from | subject):",
+    "\nINBOX: unread (from | subject):",
     ...((mail.threads || []).slice(0, 10).map(r => `  ${r.important ? "★ " : ""}${r.from} | ${r.subject}`)),
     "\nSAVED NOTES (newest first):",
     ...(state.notes.length ? state.notes.slice(0, 10).map(n => `  [${n.id}] ${n.text}`) : ["  (none yet)"]),
   ].join("\n");
 
-  const system = `You are the voice of Jeremy's Command Center — the terse, capable assistant inside his heads-up display. Jeremy is an NJIT computer-science freshman speaking to you out loud.
-STYLE: one to three short sentences, spoken-word friendly. Plain text only — no markdown, lists, emojis or headers. Say times like a person would. Lead with the answer.
+  const system = `You are the voice of ${OWNER}'s Command Center: the terse, capable assistant inside their heads-up display. ${OWNER} is an NJIT computer-science freshman speaking to you out loud.
+STYLE: one to three short sentences, spoken-word friendly. Plain text only: no markdown, lists, emojis or headers. Say times like a person would. Lead with the answer.
 TRUTH: the DATA block is the only source of facts. Never invent. If it isn't in the data, say so briefly. Times are ${env.TIMEZONE}.
 ACTIONS: When he tells you something to remember (reminder, idea, to-do, plan) call save_note with a clean one-line version, then confirm briefly. When he says an item is done, fake, a glitch, or to hide/dismiss it, call dismiss_item with its exact id, then confirm. If ambiguous, ask one short question. Never call a tool for a plain question. Don't narrate tool use.
 
@@ -415,7 +416,7 @@ DATA:
 ${data}`;
 
   const tools = [
-    { name: "save_note", description: "Save something Jeremy said for later (reminders, ideas, to-dos). Pass a clean one-line version.", input_schema: { type: "object", properties: { text: { type: "string" } }, required: ["text"] } },
+    { name: "save_note", description: "Save something " + OWNER + " said for later (reminders, ideas, to-dos). Pass a clean one-line version.", input_schema: { type: "object", properties: { text: { type: "string" } }, required: ["text"] } },
     { name: "dismiss_item", description: "Hide a Canvas item from the dashboard because it's done, a glitch, or not real. Takes the exact item id from DATA.", input_schema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] } },
   ];
 
@@ -685,7 +686,7 @@ async function workersAiChat(env, system, messages, tools, runTool, actions) {
    tractionbattery-stateofcharge and tractionbattery-range. Nothing here sends commands to the car.
    Auth (v3): the owner connects once through Smartcar Connect (/auth/smartcar); the redirect carries a user_id, which we keep
    in KV with the vehicle id from /v3/connections. Each read uses an app token from the client-credentials flow (1 hour,
-   cached in KV, re-requested when it runs out — there is no per-user token to refresh).
+   cached in KV, re-requested when it runs out: there is no per-user token to refresh).
    Budget: a check is 2 signal requests. At most ~4 scheduled checks a day (carCron) plus one when the app opens and the
    last reading is 3+ hours old; hard caps SMARTCAR_DAILY_CAP checks a day (default 6) and SMARTCAR_MONTHLY_CAP requests
    a month (default 360, under the free plan's per-vehicle monthly allowance). Smartcar refuses (430 VEHICLE_REQUEST_LIMIT)

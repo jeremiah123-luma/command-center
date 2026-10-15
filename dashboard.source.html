@@ -1,12 +1,12 @@
-<title>Jeremy's Command Center</title>
+<title>Command Center</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,400;0,500;1,400&family=Outfit:wght@300;400;500;600&family=Geist+Mono:wght@400;500;600;700&display=swap">
 <style>
-  /* Sligoil (Velvetyne, SIL OFL) — only the "C" glyph, for the CC mark */
+  /* Sligoil (Velvetyne, SIL OFL): only the "C" glyph, for the CC mark */
   @font-face{font-family:"Sligoil";src:url(data:font/ttf;base64,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rrp+oUl9cXtvhvBeVoygAAAAAAcAWgADAAEECQAAADAAAAADAAEECQABACQAMAADAAEECQACAAgAVAADAAEECQADADgAXAADAAEECQAEACQAMAADAAEECQAFABoAlAADAAEECQAGACIArgCpADIAMAAyADUAIABBAHIAaQBlAGwAIABNAGEAcgB0AO0AbgAgAFAA6QByAGUAegBTAGwAaQBnAG8AaQBsACAATQBpAGMAcgBvACAAQgBvAGwAZABCAG8AbABkADEALgAwADAAMAA7AFUASwBXAE4AOwBTAGwAaQBnAG8AaQBsAC0ATQBpAGMAcgBvAEIAbwBsAGQAVgBlAHIAcwBpAG8AbgAgADEALgAwADAAMABTAGwAaQBnAG8AaQBsAC0ATQBpAGMAcgBvAEIAbwBsAGQAAAADAAAAAAAA/5wAMgAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAf//AA8AAQAAAAwAAAAAAAAAAQABAAEAAQABAAAACgAcAB4AAURGTFQACAAEAAAAAP//AAAAAAAAAAEAAAAKACYAKAACREZMVAAObGF0bgAYAAQAAAAA//8AAAAAAAAAAAAAAAA=) format("truetype");font-display:block}
 
-  /* Sligoil (Velvetyne, SIL OFL) — A–Z, 0–9 and space only, for the split-flap tiles on the departures board */
+  /* Sligoil (Velvetyne, SIL OFL): A to Z, 0 to 9 and space only, for the split-flap tiles on the departures board */
   @font-face{font-family:"Sligoil Flap";src:url(data:font/ttf;base64,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) format("truetype");font-display:block}
 
   /* ══ TOKENS ══ basement palette: black, two whites, two greys, one orange; semantic r/y/g from their own set */
@@ -458,7 +458,7 @@
     </div>
   </div>
 
-  <div class="foot" id="foot"><span>Canvas · Calendar · Gmail — live</span><button type="button" id="tune-btn">Tune ⌁</button></div>
+  <div class="foot" id="foot"><span>Canvas · Calendar · Gmail: live</span><button type="button" id="tune-btn">Tune ⌁</button></div>
 </div>
 
 
@@ -584,7 +584,7 @@
     var el=$("cv-sync"); if(!canvas){el.textContent="";return;}
     var t=new Date(canvas.updatedAt), stale=(Date.now()-t)>3*3600000;
     el.className="sync"+(stale?" stale":"");
-    el.textContent=(stale?"⚠ last sync ":"sync ")+ago(t.getTime())+(stale?" — hourly sync may have stalled":"");
+    el.textContent=(stale?"⚠ last sync ":"sync ")+ago(t.getTime())+(stale?": the 30-minute sync may have stalled":"");
     setSrc("src-canvas",stale?"warn":"on");
   }
   function renderCanvas(){
@@ -721,7 +721,7 @@
       case "not_in_manifest": return {t:server+" access off",d:"This page isn't allowed to read "+server+" for you.",a:""};
       case "blocked_by_policy": case "approval_required": return {t:server+" blocked",d:"Your organization restricts this connector.",a:""};
       case "not_granted": case "capability_disabled": case "capability_removed": return {t:"Live feed unavailable here",d:"Open this dashboard inside claude.ai to see your "+server+" data.",a:""};
-      default: return {t:"Couldn't reach "+server,d:"Temporary issue — retrying.",a:""};
+      default: return {t:"Couldn't reach "+server,d:"Temporary issue: retrying.",a:""};
     }
   }
   function showErr(bodyId,badgeId,srcId,code,server,retryable){
@@ -731,7 +731,7 @@
 
 
   /* ══════════════════════════════════════════════
-     OVERVIEW — headline (what's next, in plain words) · departures board · scrolling timeline · summary line
+     OVERVIEW: headline (what's next, in plain words) · departures board · scrolling timeline · summary line
      Everything here reads the same state the Work/Schedule/Inbox panels use: canvas, events, mailRows.
      ══════════════════════════════════════════════ */
   var unreadCount=0;
@@ -936,7 +936,7 @@
   (function(){ var rz=0; window.addEventListener("resize",function(){ clearTimeout(rz); rz=setTimeout(function(){ var f=$("flap"); if(f&&boardWord&&Math.abs(f.clientWidth-boardAvail)>2) buildTiles(); },150); }); })();
 
   /* ══════════════════════════════════════════════
-     FX — the visual layer. Each piece loads on its own and fails quietly;
+     FX: the visual layer. Each piece loads on its own and fails quietly;
      the dashboard works without any of them.
        · DialKit     (dialkit/vanilla)          live tuning panel (Tune in the footer, or press `)
      ══════════════════════════════════════════════ */
@@ -1070,7 +1070,7 @@
 
 
   /* ══════════════════════════════════════════════
-     NOW — the sentence at the top. Where you need to be and when to leave.
+     NOW: the sentence at the top. Where you need to be and when to leave.
        Leave-by = first on-campus event − drive − buffer (CC.commute). A campus event is anything whose
        location mentions NJIT (not Zoom/virtual). All-day "no classes" / "wellness day" events cancel that day.
      ══════════════════════════════════════════════ */
@@ -1197,7 +1197,7 @@
   function renderChips(){ var el=$("chips"); if(!el) return; var h=driveChip()+carChip()+weatherChip()+examChip(); if(h!==chipSig){ chipSig=h; el.innerHTML=h; } }
 
   /* ══════════════════════════════════════════════
-     LIVE — standalone app only (the claude.ai copy can't reach these): the build's data layer calls
+     LIVE: standalone app only (the claude.ai copy can't reach these): the build's data layer calls
      startCommute(api) and startSpotify(api). Traffic: /api/commute (Google Routes, cached in the Worker).
      ══════════════════════════════════════════════ */
   CC.drive=null;
@@ -1410,7 +1410,7 @@
   tick();
   (async function(){
     var db=null, gotData=false, watchdog=null;
-    var slowTimer=setTimeout(function(){ canvasBoot("still linking — the viewer is slow to answer"); },4000);
+    var slowTimer=setTimeout(function(){ canvasBoot("still linking: the viewer is slow to answer"); },4000);
     try{db=await claude.use("db");}catch(e){db=null;}
     clearTimeout(slowTimer);
     if(!db){ canvasState("Canvas feed unavailable here","This view can't reach the dashboard's data store. Open it inside the Claude app or claude.ai.",""); return; }
@@ -1420,7 +1420,7 @@
       if(!snap||!snap.exists){ if(!gotData) canvasState("Awaiting first Canvas sync","The hourly sync hasn't written a snapshot yet.","",subscribe); return; }
       var data=snap.data(); if(!data){ return; }
       gotData=true; if(watchdog){clearTimeout(watchdog);watchdog=null;}
-      // snapshots are frozen — clone before render, which annotates items with __due/__state
+      // snapshots are frozen: clone before render, which annotates items with __due/__state
       try{ canvas=JSON.parse(JSON.stringify(data)); }catch(e){ canvas=Object.assign({},data,{items:(data.items||[]).map(function(x){return Object.assign({},x);})}); }
       try{ renderCanvas(); }
       catch(e){ canvasState("Render error","The Canvas snapshot loaded but the panel couldn't draw it: "+(e&&e.message||e),"",subscribe); }
@@ -1458,7 +1458,7 @@
   })();
 
   /* ══════════════════════════════════════════════
-     COMMS LINK — voice / text channel to Claude (sample capability)
+     COMMS LINK: voice / text channel to Claude (sample capability)
      ══════════════════════════════════════════════ */
   (async function(){
     var sample=null; try{ sample=await claude.use("sample"); }catch(e){ sample=null; }
@@ -1475,7 +1475,7 @@
 
     /* The Claude viewer frames this page without microphone permission, so the browser's own
        speech recognition is refused before it starts. When we know that, the mic button goes
-       straight to the keyboard — the OS dictation key works inside any text field. */
+       straight to the keyboard: the OS dictation key works inside any text field. */
     var micBlocked=false;
     try{ micBlocked=localStorage.getItem("cc.micBlocked")==="1"; }catch(e){}
     if(!SR) micBlocked=true;
@@ -1483,10 +1483,10 @@
     if(!micBlocked&&navigator.permissions&&navigator.permissions.query){
       navigator.permissions.query({name:"microphone"}).then(function(st){ if(st.state==="denied") markBlocked(); }).catch(function(){});
     }
-    function markBlocked(){ micBlocked=true; try{localStorage.setItem("cc.micBlocked","1");}catch(e){} mic.title="Tap, then use the mic key on your keyboard"; mic.setAttribute("aria-label","Open comms — dictate with your keyboard's mic key"); }
+    function markBlocked(){ micBlocked=true; try{localStorage.setItem("cc.micBlocked","1");}catch(e){} mic.title="Tap, then use the mic key on your keyboard"; mic.setAttribute("aria-label","Open comms: dictate with your keyboard's mic key"); }
     if(micBlocked) markBlocked();
     var IS_TOUCH=("ontouchstart" in window)||navigator.maxTouchPoints>0;
-    function keyboardHint(){ return IS_TOUCH ? "Browser mic is blocked in this viewer — tap the mic key on your keyboard and just talk, then Send." : "Browser mic is blocked in this viewer — type here (on a Mac, press the 🎤 key or fn twice to dictate)."; }
+    function keyboardHint(){ return IS_TOUCH ? "Browser mic is blocked in this viewer: tap the mic key on your keyboard and just talk, then Send." : "Browser mic is blocked in this viewer: type here (on a Mac, press the 🎤 key or fn twice to dictate)."; }
     function toKeyboard(){ openDrawer(); if(!log.querySelector(".msg.hint")){ var m=addMsg("sys hint",keyboardHint()); } setStatus("Dictate or type"); input.focus({preventScroll:true}); }
 
     mic.hidden=false;
@@ -1513,7 +1513,7 @@
       if(canvas&&canvas.items){
         var live=canvas.items.filter(function(x){return ignored.indexOf(x.id)<0 && !(x.type==="discussion_topic"&&x.points==null) && !x.submitted && !x.excused;})
                   .sort(function(a,b){return new Date(a.dueAt||0)-new Date(b.dueAt||0);}).slice(0,25);
-        L.push("\nCANVAS — open coursework (id | course | title | due | pts | state):");
+        L.push("\nCANVAS: open coursework (id | course | title | due | pts | state):");
         if(!live.length) L.push("  (nothing open)");
         live.forEach(function(x){ var d=x.dueAt?new Date(x.dueAt):null; L.push("  "+x.id+" | "+x.course+" | "+x.title+" | "+(d?fmtNY(d):"no due date")+" | "+(x.points!=null?x.points:"-")+" | "+(d&&d<now?"OVERDUE":"open")); });
         var doneRecent=canvas.items.filter(function(x){return x.submitted;}).slice(-6).map(function(x){return x.title+" ("+x.course+")";});
@@ -1522,10 +1522,10 @@
       } else L.push("\nCANVAS: unavailable right now");
       var horizon=new Date(now.getTime()+3*86400000);
       var sched=events.filter(function(e){return e.__end>=now && e.__start<horizon && !ownedByCanvas(e.summary);}).sort(function(a,b){return a.__start-b.__start;}).slice(0,16);
-      L.push("\nCALENDAR — next 3 days:");
+      L.push("\nCALENDAR: next 3 days:");
       if(!sched.length) L.push("  (nothing)");
       sched.forEach(function(e){ L.push("  "+fmtNY(e.__start)+" | "+(e.summary||"").replace(/^[📌📚]\s*/u,"")+(e.location?" | "+e.location:"")); });
-      L.push("\nINBOX — unread (from | subject):");
+      L.push("\nINBOX: unread (from | subject):");
       if(!mailRows.length) L.push("  (none)");
       mailRows.slice(0,10).forEach(function(r){ L.push("  "+(r.important?"★ ":"")+r.name+" | "+r.subj); });
       L.push("\nSAVED NOTES (newest first):");
@@ -1533,10 +1533,10 @@
       notes.slice(0,10).forEach(function(n){ L.push("  ["+n.id+"] "+n.text); });
       return L.join("\n");
     }
-    var RULES = "You are the voice of Jeremy's Command Center — the terse, capable assistant inside his heads-up display. Jeremy is an NJIT computer-science freshman; he is speaking to you out loud on his phone or laptop.\n"
-      +"STYLE: answer in one to three short sentences, spoken-word friendly. Plain text only — no markdown, no lists, no emojis, no headers. Say times like a person would (\"tomorrow at 11:59 PM\", \"in about two hours\"). Lead with the answer.\n"
+    var RULES = "You are the voice of Jeremy's Command Center: the terse, capable assistant inside his heads-up display. Jeremy is an NJIT computer-science freshman; he is speaking to you out loud on his phone or laptop.\n"
+      +"STYLE: answer in one to three short sentences, spoken-word friendly. Plain text only: no markdown, no lists, no emojis, no headers. Say times like a person would (\"tomorrow at 11:59 PM\", \"in about two hours\"). Lead with the answer.\n"
       +"TRUTH: the DATA block below is the only source of facts. Never invent assignments, times, emails or grades. If something isn't in the data, say so in a few words. All times are America/New_York.\n"
-      +"ACTIONS: When Jeremy tells you something to remember — a reminder, a thought, a to-do, a plan, or anything that is information for later rather than a question — call save_note with a clean one-line version of it, then confirm in a few words. When he says an item is done, fake, a glitch, not his, or asks to hide or dismiss it, call dismiss_item with that item's exact id from the data, then confirm. If it's ambiguous which item he means, ask one short question instead of guessing. Never call a tool for a plain question.\n"
+      +"ACTIONS: When Jeremy tells you something to remember: a reminder, a thought, a to-do, a plan, or anything that is information for later rather than a question: call save_note with a clean one-line version of it, then confirm in a few words. When he says an item is done, fake, a glitch, not his, or asks to hide or dismiss it, call dismiss_item with that item's exact id from the data, then confirm. If it's ambiguous which item he means, ask one short question instead of guessing. Never call a tool for a plain question.\n"
       +"Don't narrate tool use (\"calling save_note\"); just do it and tell him the outcome.";
 
     var tools=[
@@ -1558,7 +1558,7 @@
         execute:async function(inp){
           var id=String(inp.id||"").trim();
           var item=(canvas&&canvas.items||[]).filter(function(x){return x.id===id;})[0];
-          if(!item) throw new Error("no item with id "+id+" — ask Jeremy which one he means");
+          if(!item) throw new Error("no item with id "+id+": ask Jeremy which one he means");
           if(!dbRef) throw new Error("storage unavailable in this view");
           if(ignored.indexOf(id)<0){ var next=ignored.concat([id]); ignored=next; renderCanvas(); await dbRef.doc("canvas/ignored").set({ids:next,updatedAt:new Date().toISOString()}); }
           addMsg("sys","dismissed · "+item.title);
@@ -1579,9 +1579,9 @@
     }
 
     /* ---- ask Claude ---- */
-    var errCopy={not_granted:"Claude access wasn't allowed for this page — the link is closed for this visit.",sampling_disabled:"Claude isn't available on this account.",
-      rate_limited:"Too many requests right now — give it a minute.",session_expired:"Sign in to claude.ai again to keep talking.",refused:"I can't help with that one.",
-      empty_completion:"I came back with nothing — try rephrasing.",prompt_too_large:"That's more than I can read at once.",upstream_error:"Connection hiccup — try again."};
+    var errCopy={not_granted:"Claude access wasn't allowed for this page: the link is closed for this visit.",sampling_disabled:"Claude isn't available on this account.",
+      rate_limited:"Too many requests right now: give it a minute.",session_expired:"Sign in to claude.ai again to keep talking.",refused:"I can't help with that one.",
+      empty_completion:"I came back with nothing: try rephrasing.",prompt_too_large:"That's more than I can read at once.",upstream_error:"Connection hiccup: try again."};
     async function ask(text){
       if(busy||!text.trim()) return;
       busy=true; mic.classList.add("thinking"); setStatus("Thinking","busy"); stopBtn.hidden=false; $("voice-send").disabled=true;
@@ -1640,7 +1640,7 @@
   })();
 
   /* ══════════════════════════════════════════════
-     PAGER — phone: swipe between panels, tabs track position
+     PAGER: phone: swipe between panels, tabs track position
      ══════════════════════════════════════════════ */
   (function(){
     var grid=$("grid"), tabs=Array.prototype.slice.call(document.querySelectorAll("#dock-pages button")), panels=Array.prototype.slice.call(grid.querySelectorAll(".page"));
@@ -1694,7 +1694,7 @@
         else if(i===0) window.scrollTo({top:0,behavior:sm}); else if(el) el.scrollIntoView({behavior:sm,block:"start"});
         setActive(i); return; }
       goTo(i,true); }); });
-    // keyboard: 1–4 jump to a page; ← → swipe on phone-width windows
+    // keyboard: 1 to 4 jump to a page; ← → swipe on phone-width windows
     document.addEventListener("keydown",function(e){
       if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)||e.metaKey||e.ctrlKey||e.altKey||document.querySelector(".sheet.on")) return;
       if(/^[1-4]$/.test(e.key)){ tabs[Number(e.key)-1].click(); return; }

@@ -85,7 +85,7 @@ test("dismissing, undismissing, and notes round-trip through state", async () =>
 });
 
 test("home coordinates come from the HOME_LATLON secret, and nothing is returned without it", () => {
-  assert.deepEqual(placesFromEnv({ HOME_LATLON: "40.5,-74.3" }), { home: { lat: 40.5, lon: -74.3 } });
+  assert.deepEqual(placesFromEnv({ HOME_LATLON: "51.5,-0.1" }), { home: { lat: 51.5, lon: -0.1 } });
   assert.deepEqual(placesFromEnv({}), { home: null });
   assert.deepEqual(placesFromEnv({ HOME_LATLON: "not,numbers" }), { home: null });
 });
