@@ -22,3 +22,6 @@ __pycache__/
 # anything exported from the live app (assignments, mail, calendar snapshots)
 *.snapshot.json
 snapshots/
+
+# Claude Code instructions stay on this Mac, never on GitHub
+CLAUDE.md
