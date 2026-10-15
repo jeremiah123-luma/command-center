@@ -1,0 +1,4 @@
+# public/index.html is built from dashboard.source.html by build_frontend.py, and design/ holds reference mockups.
+# Marked so GitHub language stats reflect the real code (JavaScript and Python), not generated or reference HTML.
+public/index.html linguist-generated=true
+design/** linguist-documentation=true

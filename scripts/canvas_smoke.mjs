@@ -1,4 +1,5 @@
-import { getCanvas, shortCode } from "./src/worker.js";
+// Live check against the real Canvas API (needs CANVAS_TOKEN). Not part of the test suite: node scripts/canvas_smoke.mjs
+import { getCanvas, shortCode } from "../src/worker.js";
 const mem = new Map();
 const env = {
   CANVAS_BASE: "https://njit.instructure.com",

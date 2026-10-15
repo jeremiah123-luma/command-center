@@ -63,7 +63,7 @@ Phone / Mac (PWA) ◄──── src/worker.js (Cloudflare Worker) ◄───
 - **GitHub Actions** for the scheduled Canvas sync
 - **PWA** (web manifest, service worker, add-to-home-screen on iOS)
 
-Built with Claude Code as a pair programmer. `design/cc2/` holds the redesign briefs and reference pages.
+Built with Claude Code as a pair programmer. `design/cc2/` holds the reference pages from the 2.0 redesign.
 
 ## Run your own copy
 
@@ -88,10 +88,11 @@ Set `CANVAS_BASE` in `wrangler.toml` to your school's Canvas URL. Then, optional
 |---|---|---|
 | Calendar + Gmail | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google Cloud console, OAuth client (Web), redirect `https://<your-worker>/auth/google/callback` |
 | Live drive time | `GOOGLE_MAPS_KEY`, `HOME_ADDRESS`, optional `CAMPUS_ADDRESS` | API key restricted to the Routes API |
+| Weather at home | `HOME_LATLON` ("lat,lon") | Read by `/api/places`, so no location is ever in the code |
 | Spotify | `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` | Spotify developer dashboard, redirect `https://<your-worker>/auth/spotify/callback` |
 | Canvas sync via GitHub Actions | repo secrets `CANVAS_TOKEN`, `INGEST_URL`, `INGEST_SECRET`; Worker secret `INGEST_SECRET` | `INGEST_URL` is `https://<your-worker>/api/canvas/ingest` |
 
-Local dev: `cp .dev.vars.example .dev.vars`, fill it in, `npm run dev`. Edit the UI in `dashboard.source.html`, then `python3 build_frontend.py`.
+Local dev: `cp .dev.vars.example .dev.vars`, fill it in, `npm run dev`. Tests: `npm test` (offline; fetch and KV are faked), and the same check runs on every push. Edit the UI in `dashboard.source.html`, then `python3 build_frontend.py`.
 
 ## Roadmap
 

@@ -25,3 +25,6 @@ snapshots/
 
 # Claude Code instructions stay on this Mac, never on GitHub
 CLAUDE.md
+
+# Design handoff notes written for Claude Code stay local
+design/cc2/BRIEF.md

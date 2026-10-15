@@ -1153,7 +1153,12 @@
   function whereNow(){ var now=new Date(), t=campusOn(now); return t.length&&now<t[t.length-1].__end&&now>=leaveAt(t[0])?"campus":"home"; }
   async function loadWeather(){
     try{
-      var P=CC.places, url="https://api.open-meteo.com/v1/forecast?latitude="+P.campus.lat+","+P.home.lat+"&longitude="+P.campus.lon+","+P.home.lon
+      var P=CC.places;
+      if(P.home.lat==null){   // home coordinates come from the Worker (a secret), not from this file
+        try{ var pr=await fetch("/api/places",{credentials:"same-origin"}); if(pr.ok){ var pj=await pr.json(); if(pj&&pj.home){ P.home.lat=pj.home.lat; P.home.lon=pj.home.lon; } } }catch(e){}
+        if(P.home.lat==null){ P.home.lat=P.campus.lat; P.home.lon=P.campus.lon; }
+      }
+      var url="https://api.open-meteo.com/v1/forecast?latitude="+P.campus.lat+","+P.home.lat+"&longitude="+P.campus.lon+","+P.home.lon
         +"&current=temperature_2m,weather_code,is_day,cloud_cover,precipitation,snowfall,wind_speed_10m,wind_direction_10m&hourly=precipitation_probability&temperature_unit=fahrenheit&timezone=America%2FNew_York&forecast_days=2";
       var r=await fetch(url); if(!r.ok) return; var j=await r.json(); if(!Array.isArray(j)) return;
       CC.weather={campus:j[0],home:j[1],at:Date.now()}; renderChips();

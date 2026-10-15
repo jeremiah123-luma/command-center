@@ -1,0 +1,29 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Worker syntax check
+        run: node --check src/worker.js
+      - name: Unit tests (offline, fetch and KV are faked)
+        run: node --test tests/*.test.mjs
+      - name: Built page matches its source
+        run: |
+          python3 build_frontend.py
+          git diff --exit-code public/index.html
+      - name: Canvas sync script compiles
+        run: python3 -m py_compile scripts/canvas_sync.py

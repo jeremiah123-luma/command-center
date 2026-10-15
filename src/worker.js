@@ -62,6 +62,8 @@ export default {
       if (path === "/api/canvas") return json(await getCanvas(env, url.searchParams.get("refresh") === "1"));
       if (path === "/api/calendar") return json(await getCalendar(env));
       if (path === "/api/gmail") return json(await getGmail(env));
+      // Home coordinates for the weather live in the HOME_LATLON secret ("lat,lon"), never in the code.
+      if (path === "/api/places") return json(placesFromEnv(env));
       if (path === "/api/state") return request.method === "POST" ? postState(request, env) : json(await getState(env));
       if (path === "/api/chat") return request.method === "POST" ? chat(request, env) : json({ error: "POST only" }, 405);
       if (path === "/api/commute") return json(await getCommute(env, url));
@@ -340,6 +342,11 @@ async function getCanvas(env, force = false) {
 }
 
 /* ───────────────────────── state: dismissed + notes ───────────────────────── */
+
+function placesFromEnv(env) {
+  const [lat, lon] = String(env.HOME_LATLON || "").split(",").map(Number);
+  return { home: Number.isFinite(lat) && Number.isFinite(lon) ? { lat, lon } : null };
+}
 
 async function getState(env) {
   const ignored = (await env.STATE.get("state:ignored", "json")) || [];
@@ -995,4 +1002,4 @@ function pickLine(content, subtitle) {
 function escapeHtml(s) { return String(s).replace(/[&<>"]/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m])); }
 
 // named exports for tests
-export { getCanvas, shortCode, getState, postState, getCommute, spotifyNow, getCar, carCron, smartcarAuthStart, smartcarAuthCallback, substackFeeds, buildSubstackPool, onTopic };
+export { getCanvas, shortCode, placesFromEnv, getState, postState, getCommute, spotifyNow, getCar, carCron, smartcarAuthStart, smartcarAuthCallback, substackFeeds, buildSubstackPool, onTopic };
