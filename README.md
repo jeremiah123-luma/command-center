@@ -63,7 +63,7 @@ Phone / Mac (PWA) ◄──── src/worker.js (Cloudflare Worker) ◄───
 - **GitHub Actions** for the scheduled Canvas sync
 - **PWA** (web manifest, service worker, add-to-home-screen on iOS)
 
-Built with Claude Code as a pair programmer. `design/cc2/` holds the reference pages from the 2.0 redesign.
+I built it with help from Claude Code. `design/cc2/` holds the reference pages from the 2.0 redesign.
 
 ## Run your own copy
 
