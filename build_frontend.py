@@ -43,8 +43,17 @@ new_boot = r'''
       if(d.stale) $("cv-sync").textContent="⚠ showing cached data: "+(d.error||"Canvas unreachable");
     }catch(e){ if(String(e.message)!=="unauthorized") canvasState("Canvas unavailable",String(e.message||e),"",function(){loadCanvas(true);}); }
   }
+  var examsLoaded=null;   // the exam schedule comes from a secret (EXAMS_JSON), once per page load
+  function loadExams(){
+    if(!examsLoaded) examsLoaded=api("/api/places").then(function(p){
+      if(p&&Array.isArray(p.exams)) CC.exams=p.exams;
+      if(!calSources.primary&&!calSources.canvas){ events=commonExams(); renderChips(); }   // exams show even if Calendar is down
+    }).catch(function(){});
+    return examsLoaded;
+  }
   async function loadCalendar(){
     try{
+      await loadExams();
       var d=await api("/api/calendar");
       if(!d.ok){ if(/google_not_connected/.test(d.error||"")) { $("cal-body").innerHTML='<div class="state"><strong>Connect Google</strong>One-time sign-in to read your Calendar and Gmail.<br><a class="retry" href="/auth/google">Connect Google</a></div>'; $("cal-badge").textContent="offline"; setSrc("src-cal","err"); return; }
                 showErr("cal-body","cal-badge","src-cal","upstream_error","Google Calendar",true); return; }

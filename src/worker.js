@@ -62,7 +62,7 @@ export default {
       if (path === "/api/canvas") return json(await getCanvas(env, url.searchParams.get("refresh") === "1"));
       if (path === "/api/calendar") return json(await getCalendar(env));
       if (path === "/api/gmail") return json(await getGmail(env));
-      // Home coordinates for the weather live in the HOME_LATLON secret ("lat,lon"), never in the code.
+      // Home coordinates (HOME_LATLON) and the exam schedule (EXAMS_JSON) live in secrets, never in the code.
       if (path === "/api/places") return json(placesFromEnv(env));
       if (path === "/api/state") return request.method === "POST" ? postState(request, env) : json(await getState(env));
       if (path === "/api/chat") return request.method === "POST" ? chat(request, env) : json({ error: "POST only" }, 405);
@@ -282,7 +282,8 @@ function shortCode(code = "", name = "") {
   const m = c.match(/^([A-Z]{2,5})(\d{3}[A-Z]?)/);
   if (m) return `${m[1]} ${m[2]}`;
   if (c.startsWith("FYS")) return "FYS";
-  if (/Commons/.test(name)) return "PHYS 111 Commons";
+  const commons = name.match(/^(.*?Commons)\b/);
+  if (commons) return commons[1].trim();
   return c || name.slice(0, 14);
 }
 async function canvasGet(env, path, params = {}) {
@@ -345,7 +346,18 @@ async function getCanvas(env, force = false) {
 
 function placesFromEnv(env) {
   const [lat, lon] = String(env.HOME_LATLON || "").split(",").map(Number);
-  return { home: Number.isFinite(lat) && Number.isFinite(lon) ? { lat, lon } : null };
+  return { home: Number.isFinite(lat) && Number.isFinite(lon) ? { lat, lon } : null, exams: examsFromEnv(env) };
+}
+
+// The semester's common exams live in the EXAMS_JSON secret (a JSON array, see .dev.vars.example),
+// not in the page, so the schedule never lands in the repo.
+function examsFromEnv(env) {
+  try {
+    const list = JSON.parse(env.EXAMS_JSON || "[]");
+    return Array.isArray(list) ? list.filter((x) => x && x.title && x.start && x.end) : [];
+  } catch {
+    return [];
+  }
 }
 
 async function getState(env) {

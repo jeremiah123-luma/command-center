@@ -16,3 +16,4 @@ INGEST_SECRET=change-me-too
 # SUBSTACK_HANDLE=
 # SUBSTACK_ALLOW=
 # OWNER_NAME=
+# EXAMS_JSON=[{"title":"Chem Exam 1","course":"CHEM 101","start":"2026-10-05T16:15:00-04:00","end":"2026-10-05T17:45:00-04:00","kw":"chem|chem 101"}]

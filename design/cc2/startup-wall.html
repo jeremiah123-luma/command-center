@@ -145,7 +145,7 @@
       if(SET[i]!==" "){ x.fillStyle=col; x.fillText(SET[i],ox+tw/2,hs+fs*.04); } }
     return ATL[key]=c; }
 
-  function appHTML(){ return '<div class="app"><div class="glow"></div><p class="lead"><em>Leave by 7:05.</em> Physics I at 8:30 in Kupfrian 105.</p><span class="tag">Next up · PHYS 111A</span><p class="disp">Lab Report 2 is due Tuesday.</p><div class="row"></div><div class="row"></div><div class="dock"><i></i><i></i><i></i><i></i></div></div>'; }
+  function appHTML(){ return '<div class="app"><div class="glow"></div><p class="lead"><em>Leave by 7:05.</em> Physics I at 8:30 in Science Hall 105.</p><span class="tag">Next up · PHYS 101A</span><p class="disp">Lab Report 2 is due Tuesday.</p><div class="row"></div><div class="row"></div><div class="dock"><i></i><i></i><i></i><i></i></div></div>'; }
   function stage(ph,cols,rows,kind){
     ph.innerHTML=appHTML()+'<div class="ov"><div class="glowb"></div><canvas class="gl"></canvas><canvas class="cv"></canvas><span class="pc">0%</span></div>';
     var ov=ph.querySelector(".ov"), W=ov.clientWidth, H=ov.clientHeight, dpr=Math.min(2,window.devicePixelRatio||1);

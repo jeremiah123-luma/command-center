@@ -563,7 +563,7 @@
 (function(){
   "use strict";
   var CAL="Google Calendar", GMAIL="Gmail";
-  var CANVAS_CAL_ID="9tpuspnad29ddavvic0ma8pgrhat3o2a@import.calendar.google.com";
+  var CANVAS_CAL_ID="";  // the Canvas calendar import id; only the claude.ai preview uses it
 
   function $(id){return document.getElementById(id);}
   function esc(s){return (s==null?"":String(s)).replace(/[&<>"]/g,function(m){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[m];});}
@@ -1107,16 +1107,11 @@
      ══════════════════════════════════════════════ */
   CC.commute={drive:45,buffer:10};
   CC.places={campus:{name:"NJIT",lat:40.7424,lon:-74.1790},home:{name:"Home",lat:null,lon:null}};
-  // Registrar common exams, Fall 2026 (edit each semester). kw: how to spot the same exam if it's also on the calendar.
-  CC.exams=[
-    {title:"Physics Exam 1",course:"PHYS 111",start:"2026-10-05T16:15:00-04:00",end:"2026-10-05T17:45:00-04:00",kw:"phys",url:"https://njit.instructure.com/courses/72206/modules"},
-    {title:"CS 100 Exam 1",course:"CS 100",start:"2026-10-12T16:00:00-04:00",end:"2026-10-12T17:30:00-04:00",kw:"cs 100|cs100|computing"},
-    {title:"Calc II Exam 2",course:"MATH 112",start:"2026-10-21T16:15:00-04:00",end:"2026-10-21T17:40:00-04:00",kw:"calc|math 112"},
-    {title:"Physics Exam 2",course:"PHYS 111",start:"2026-11-02T16:15:00-05:00",end:"2026-11-02T17:45:00-05:00",kw:"phys",url:"https://njit.instructure.com/courses/72206/modules"},
-    {title:"CS 100 Exam 2",course:"CS 100",start:"2026-11-09T16:00:00-05:00",end:"2026-11-09T17:30:00-05:00",kw:"cs 100|cs100|computing"},
-    {title:"Calc II Exam 3",course:"MATH 112",start:"2026-11-18T16:15:00-05:00",end:"2026-11-18T17:40:00-05:00",kw:"calc|math 112"},
-    {title:"Physics Exam 3",course:"PHYS 111",start:"2026-11-23T16:15:00-05:00",end:"2026-11-23T17:45:00-05:00",kw:"phys",url:"https://njit.instructure.com/courses/72206/modules"}
-  ];
+  // Registrar common exams for the semester. The real list comes from the EXAMS_JSON secret through /api/places
+  // (loaded before the calendar renders), so it never sits in the repo. Each entry looks like:
+  //   {title:"Chem Exam 1",course:"CHEM 101",start:"2026-10-05T16:15:00-04:00",end:"2026-10-05T17:45:00-04:00",kw:"chem|chem 101"}
+  // kw: how to spot the same exam if it's also on the calendar. url (optional): where the card links.
+  CC.exams=[];
   function courseUrl(code){ var c=canvas&&canvas.courses&&canvas.courses.filter(function(c){return c.code===code;})[0]; return c?"https://njit.instructure.com/courses/"+c.id:""; }
   function commonExams(){
     var cutoff=Date.now()-6*3600000;
@@ -1461,8 +1456,17 @@
       if(d.stale) $("cv-sync").textContent="⚠ showing cached data: "+(d.error||"Canvas unreachable");
     }catch(e){ if(String(e.message)!=="unauthorized") canvasState("Canvas unavailable",String(e.message||e),"",function(){loadCanvas(true);}); }
   }
+  var examsLoaded=null;   // the exam schedule comes from a secret (EXAMS_JSON), once per page load
+  function loadExams(){
+    if(!examsLoaded) examsLoaded=api("/api/places").then(function(p){
+      if(p&&Array.isArray(p.exams)) CC.exams=p.exams;
+      if(!calSources.primary&&!calSources.canvas){ events=commonExams(); renderChips(); }   // exams show even if Calendar is down
+    }).catch(function(){});
+    return examsLoaded;
+  }
   async function loadCalendar(){
     try{
+      await loadExams();
       var d=await api("/api/calendar");
       if(!d.ok){ if(/google_not_connected/.test(d.error||"")) { $("cal-body").innerHTML='<div class="state"><strong>Connect Google</strong>One-time sign-in to read your Calendar and Gmail.<br><a class="retry" href="/auth/google">Connect Google</a></div>'; $("cal-badge").textContent="offline"; setSrc("src-cal","err"); return; }
                 showErr("cal-body","cal-badge","src-cal","upstream_error","Google Calendar",true); return; }

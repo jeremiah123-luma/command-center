@@ -15,11 +15,11 @@ function fakeKV() {
 }
 
 test("shortCode turns Canvas course codes into short labels", () => {
-  assert.equal(shortCode("FA26-PHYS111A021"), "PHYS 111A");
-  assert.equal(shortCode("FA26-MATH112011"), "MATH 112");
-  assert.equal(shortCode("FA26-CS100-MC"), "CS 100");
+  assert.equal(shortCode("FA26-CHEM101A003"), "CHEM 101A");
+  assert.equal(shortCode("FA26-MATH101007"), "MATH 101");
+  assert.equal(shortCode("FA26-CS101-MC"), "CS 101");
   assert.equal(shortCode("FA26-FYSSEMY23"), "FYS");
-  assert.equal(shortCode("", "PHYS 111 Commons Fall"), "PHYS 111 Commons");
+  assert.equal(shortCode("", "CHEM 101 Commons Fall"), "CHEM 101 Commons");
 });
 
 test("onTopic keeps spiritual and philosophical titles and drops the rest", () => {
@@ -31,7 +31,7 @@ test("onTopic keeps spiritual and philosophical titles and drops the rest", () =
 
 test("getCanvas follows pagination, keeps graded items only, and sorts by due date", async () => {
   const pages = {
-    "/courses": [{ body: [{ id: 1, course_code: "FA26-CS100-MC", name: "Roadmap to Computing" }] }],
+    "/courses": [{ body: [{ id: 1, course_code: "FA26-CS101-MC", name: "Intro to Computing" }] }],
     "/planner/items": [
       { body: [
         { plannable_type: "assignment", course_id: 1, plannable_id: 11, plannable: { id: 11, title: "Lab 3", due_at: "2026-10-20T03:59:00Z", points_possible: 10 }, html_url: "/a/11" },
@@ -57,7 +57,7 @@ test("getCanvas follows pagination, keeps graded items only, and sorts by due da
     const snap = await getCanvas(env, true);
     assert.equal(snap.ok, true);
     assert.deepEqual(snap.items.map((i) => i.title), ["Quiz 2", "Lab 3"], "announcement dropped, page 2 included, sorted by due");
-    assert.equal(snap.items[1].course, "CS 100");
+    assert.equal(snap.items[1].course, "CS 101");
     assert.deepEqual(snap.counts, { open: 1, submitted: 1 });
   } finally {
     globalThis.fetch = realFetch;
@@ -85,7 +85,11 @@ test("dismissing, undismissing, and notes round-trip through state", async () =>
 });
 
 test("home coordinates come from the HOME_LATLON secret, and nothing is returned without it", () => {
-  assert.deepEqual(placesFromEnv({ HOME_LATLON: "51.5,-0.1" }), { home: { lat: 51.5, lon: -0.1 } });
-  assert.deepEqual(placesFromEnv({}), { home: null });
-  assert.deepEqual(placesFromEnv({ HOME_LATLON: "not,numbers" }), { home: null });
+  assert.deepEqual(placesFromEnv({ HOME_LATLON: "51.5,-0.1" }).home, { lat: 51.5, lon: -0.1 });
+  assert.equal(placesFromEnv({}).home, null);
+  assert.equal(placesFromEnv({ HOME_LATLON: "not,numbers" }).home, null);
+  const exam = { title: "Chem Exam 1", course: "CHEM 101", start: "2026-10-05T16:15:00-04:00", end: "2026-10-05T17:45:00-04:00", kw: "chem" };
+  assert.deepEqual(placesFromEnv({ EXAMS_JSON: JSON.stringify([exam, { title: "no dates" }]) }).exams, [exam]);
+  assert.deepEqual(placesFromEnv({}).exams, []);
+  assert.deepEqual(placesFromEnv({ EXAMS_JSON: "not json" }).exams, []);
 });

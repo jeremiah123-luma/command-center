@@ -6,7 +6,7 @@ const env = {
   CANVAS_TOKEN: process.env.CANVAS_TOKEN,
   STATE: { get: async (k, t) => { const v = mem.get(k); return v == null ? null : (t === "json" ? JSON.parse(v) : v); }, put: async (k, v) => mem.set(k, v), delete: async k => mem.delete(k) },
 };
-console.log("shortCode:", ["FA26-PHYS111A021","FA26-CS100-MC","FA26-FYSSEMY23","FA26-MATH112011"].map(c => shortCode(c, "")).join(" | "));
+console.log("shortCode:", ["FA26-CHEM101A003","FA26-CS101-MC","FA26-FYSSEMX01","FA26-MATH101007"].map(c => shortCode(c, "")).join(" | "));
 const t0 = Date.now();
 const snap = await getCanvas(env, true);
 console.log("ok:", snap.ok, "| items:", snap.items.length, "| counts:", JSON.stringify(snap.counts), "| ms:", Date.now() - t0, snap.error || "");

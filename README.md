@@ -89,6 +89,7 @@ Set `CANVAS_BASE` in `wrangler.toml` to your school's Canvas URL. Then, optional
 | Calendar + Gmail | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google Cloud console, OAuth client (Web), redirect `https://<your-worker>/auth/google/callback` |
 | Live drive time | `GOOGLE_MAPS_KEY`, `HOME_ADDRESS`, optional `CAMPUS_ADDRESS` | API key restricted to the Routes API |
 | Weather at home | `HOME_LATLON` ("lat,lon") | Read by `/api/places`, so no location is ever in the code |
+| Common exams | `EXAMS_JSON` (a JSON array) | The semester's exam schedule, served by `/api/places` and shown on Schedule; format in `.dev.vars.example` |
 | Spotify | `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` | Spotify developer dashboard, redirect `https://<your-worker>/auth/spotify/callback` |
 | Substack quote | `SUBSTACK_HANDLE`, optional `SUBSTACK_ALLOW` (comma-separated publications) | Your public Substack profile name |
 | Talk | optional `OWNER_NAME` (what Talk calls you); optional paid `ANTHROPIC_API_KEY` | Workers AI is used by default, free |
