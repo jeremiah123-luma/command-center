@@ -404,7 +404,7 @@
   function parts(scr){ var out=[]; [].forEach.call(scr.children,function(c){ if(c.classList.contains("stack")||c.classList.contains("rail")||c.id==="wlist") [].forEach.call(c.children,function(k){ out.push(k); }); else out.push(c); }); return out; }
 
   /* departures board */
-  var WORD="LAB REPORT 2", A="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", flap=$("flap");
+  var WORD="LAB REPORT 1", A="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", flap=$("flap");
   flap.innerHTML=WORD.split("").map(function(){ return '<i aria-hidden="true">&nbsp;</i>'; }).join(""); var cells=[].slice.call(flap.children);
   function flip(){ function fin(){ cells.forEach(function(c,i){ c.textContent=WORD[i]===" "?" ":WORD[i]; }); }
     if(REDUCED){ fin(); return; } var t=0, iv=setInterval(function(){ t++; cells.forEach(function(c,i){ c.textContent=(t>6+i*1.2)?(WORD[i]===" "?" ":WORD[i]):A[(Math.random()*A.length)|0]; }); if(t>6+cells.length*1.2){ clearInterval(iv); fin(); } },55); }

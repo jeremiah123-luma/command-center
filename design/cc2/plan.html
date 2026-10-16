@@ -461,7 +461,7 @@
     knob.style.transition="none"; go(Number(f.dataset.start||0)); requestAnimationFrame(function(){ requestAnimationFrame(function(){ knob.style.transition=""; }); });
   });
   // departures board, flips once when shown
-  var flap=document.getElementById("flap"), word="LAB REPORT 2", A="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  var flap=document.getElementById("flap"), word="LAB REPORT 1", A="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   flap.innerHTML=word.split("").map(function(){ return "<i>&nbsp;</i>"; }).join("");
   var cells=[].slice.call(flap.children);
   function settle(){ cells.forEach(function(c,i){ c.textContent=word[i]===" "?" ":word[i]; }); }
