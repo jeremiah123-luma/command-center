@@ -92,4 +92,6 @@ test("home coordinates come from the HOME_LATLON secret, and nothing is returned
   assert.deepEqual(placesFromEnv({ EXAMS_JSON: JSON.stringify([exam, { title: "no dates" }]) }).exams, [exam]);
   assert.deepEqual(placesFromEnv({}).exams, []);
   assert.deepEqual(placesFromEnv({ EXAMS_JSON: "not json" }).exams, []);
+  assert.deepEqual(placesFromEnv({ EXAMS_JSON: JSON.stringify([{ ...exam, kw: "(" }, { ...exam, kw: "" }]) }).exams, []);
+  assert.equal(shortCode("", "Fall 2026 Introductory Physics Commons (all sections)").length <= 24, true);
 });

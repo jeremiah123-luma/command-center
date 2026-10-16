@@ -18,7 +18,7 @@ Between Canvas, my calendar, my email, and figuring out when I actually needed t
 
 ## What's on the screen
 
-- **Today:** one plain-language sentence ("Leave by 7:35 for English 102 at 8:30."), the next thing due, and what's after that. Chips for drive time, rain, and the next exam. A quote under it takes turns between a Bible verse and a line from a Substack post.
+- **Today:** one plain-language sentence ("Leave by 7:35 for English 101 at 8:30."), the next thing due, and what's after that. Chips for drive time, rain, and the next exam. A quote under it takes turns between a Bible verse and a line from a Substack post.
 - **Work:** a split-flap departures board showing the next assignment out, then everything due, grouped by day, with progress pills for homework that reports a partial score.
 - **Schedule:** a timeline rail with a "now" line, drives placed on the rail ("Leave for NJIT", "Head home"), and day chips for the next two weeks.
 - **Inbox:** unread Gmail, important first.

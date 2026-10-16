@@ -18,7 +18,7 @@ def short_code(code, name):
     if m: return f"{m.group(1)} {m.group(2)}"
     if c.startswith("FYS"): return "FYS"
     commons = re.match(r"^(.*?Commons)\b", name or "")
-    if commons: return commons.group(1).strip()
+    if commons: return commons.group(1).strip()[:24]
     return c or (name or "")[:14]
 now = datetime.now(timezone.utc)
 start = (now - timedelta(days=7)).strftime("%Y-%m-%dT00:00:00Z"); end = (now + timedelta(days=35)).strftime("%Y-%m-%dT00:00:00Z")

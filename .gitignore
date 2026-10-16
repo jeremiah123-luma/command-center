@@ -28,3 +28,6 @@ CLAUDE.md
 
 # Design handoff notes written for Claude Code stay local
 design/cc2/BRIEF.md
+
+# Build briefs written for Claude Code stay local
+design/**/BRIEF.md

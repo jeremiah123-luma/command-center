@@ -235,13 +235,13 @@
     <div class="chips gap-s"><span class="chip"><span class="dot"></span>71 min drive</span><span class="chip">Rain at 2 PM</span><span class="chip"><span class="dot y"></span>Phys Exam 1 in 10d</span></div>
     <div class="stack gap-l" style="gap:12px">
       <span class="tag m">Next up · PHYS 101A</span>
-      <p class="display">Lab Report 2 is due Tuesday.</p>
+      <p class="display">Lab Report 1 is due Tuesday.</p>
       <p class="lbl" style="color:rgba(255,255,255,.72)">4d 7h left · 100 pts · not submitted</p>
       <a class="cta" href="https://njit.instructure.com/" target="_blank" rel="noopener">Open in Canvas <svg viewBox="0 0 24 24"><use href="#i-out"/></svg></a>
     </div>
     <div class="stack gap-l">
       <span class="lbl">After that</span>
-      <div class="pill"><span class="dot g"></span><span class="t"><b>White Paper Outline</b><span>ENGL 101 · Wed 8:30 AM</span></span><span class="v">4d</span></div>
+      <div class="pill"><span class="dot g"></span><span class="t"><b>Essay Outline</b><span>ENGL 101 · Wed 8:30 AM</span></span><span class="v">4d</span></div>
       <div class="pp" style="--p:50%"><span class="fill"></span><span class="l">Ch 3 Homework</span><span class="ticks"><i></i><i></i><i></i><i></i></span><span class="r">5.5/11</span></div>
       <div class="pill"><span class="dot g"></span><span class="t"><b>Homework 04</b><span>CS 101 · Wed 11:59 PM</span></span><span class="v">5d</span></div>
     </div>
@@ -253,7 +253,7 @@
     <div class="head"><h1 class="title">Work</h1><span class="lbl">16 open · 0 late</span></div>
     <div class="board gap-m">
       <div class="bh"><b>Departures</b><span class="lbl">next out</span></div>
-      <div class="flap" id="flap" aria-label="Lab Report 2"></div>
+      <div class="flap" id="flap" aria-label="Lab Report 1"></div>
       <div class="bm"><span>Tue 11:59 PM · PHYS 101A</span><b>On track</b></div>
     </div>
     <div class="chips gap-m" id="wfilter" role="group" aria-label="Filter">
@@ -276,8 +276,8 @@
     <div class="head"><h1 class="title">Inbox</h1><span class="lbl">3 unread</span></div>
     <div class="stack gap-m">
       <span class="lbl">Important</span>
-      <div class="pill"><span class="av">IK</span><span class="t"><b>Practice Tests for Exam 1</b><span>Ilya Kuzichev · 6m</span></span><span class="dot"></span></div>
-      <div class="pill"><span class="av">TF</span><span class="t"><b>Registration advising, Wed 11:10</b><span>an advisor · 5h</span></span><span class="dot"></span></div>
+      <div class="pill"><span class="av">CI</span><span class="t"><b>Practice Tests for Exam 1</b><span>Course instructor · 6m</span></span><span class="dot"></span></div>
+      <div class="pill"><span class="av">AD</span><span class="t"><b>Registration advising, Wed 11:10</b><span>an advisor · 5h</span></span><span class="dot"></span></div>
       <span class="lbl" style="margin-top:10px">Everything else</span>
       <div class="pill"><span class="av">HH</span><span class="t"><b>This week at NJIT</b><span>Highlander Hub · 10h</span></span><span class="dot n"></span></div>
       <div class="pill faded"><span class="av">CV</span><span class="t"><b>Grade posted: Quiz 2</b><span>Canvas · yesterday</span></span></div>
@@ -301,7 +301,7 @@
   <div class="sheet-top"><button class="gc" type="button" data-close aria-label="Close"><svg><use href="#i-down"/></svg></button><span class="lbl" style="color:rgba(255,255,255,.75)">Now playing · sample</span><button class="gc" type="button" id="like" aria-label="Like" aria-pressed="false"><svg><use href="#i-heart"/></svg></button></div>
   <div class="art-big"></div>
   <div class="stack gap-l" style="gap:10px">
-    <span class="tag">Jeremy's iPhone</span>
+    <span class="tag">iPhone</span>
     <p class="title">Nights</p>
     <p class="lbl" style="color:rgba(255,255,255,.65)">Frank Ocean · Blonde</p>
     <div class="pp" id="prog" style="--p:32%;margin-top:6px"><span class="fill"></span><span class="l" id="pos" style="font-family:var(--mono);font-size:12px">1:38</span><span class="ticks"><i></i><i></i><i></i><i></i></span><span class="r">5:07</span></div>
@@ -369,17 +369,17 @@
 
   /* ── sample data ── */
   var WORK={
-    soon:[{d:"Tuesday",items:[{t:"Lab Report 2",m:"PHYS 101A · 11:59 PM · 100 pts",v:"4d",s:"g"}]},
-          {d:"Wednesday",items:[{t:"White Paper Outline",m:"ENGL 101 · 8:30 AM",v:"4d",s:"g"},{p:50,t:"Ch 3 Homework",r:"5.5/11"},{t:"Homework 04",m:"CS 101 · 11:59 PM · 70 pts",v:"5d",s:"g"},{t:"Module 4 Participation",m:"CS 101 · 11:59 PM",v:"5d",s:"g"}]}],
-    week:[{d:"Thursday",items:[{t:"Calc II Quiz (8.1, 8.2)",m:"Math 102 · all day · exam",v:"6d",s:"o",o:1},{t:"Math Quiz",m:"8:45 AM · exam",v:"6d",s:"o",o:1}]},
-          {d:"Friday",items:[{t:"Reading Response 3",m:"ENGL 101 · 11:59 PM",v:"7d",s:"g"}]}],
-    later:[{d:"Next week",items:[{t:"Physics Exam 1",m:"PHYS 101 · Oct 5",v:"10d",s:"y"},{t:"Chapter 05 Homework",m:"PHYS 101 · Oct 7",v:"12d",s:"n"}]}],
-    done:[{d:"Submitted",items:[{t:"Quiz 2",m:"PHYS 101 · 100/100",v:"✓",s:"n",f:1},{t:"Chapter 02 Homework",m:"PHYS 101 · 15/15",v:"✓",s:"n",f:1}]}]
+    soon:[{d:"Tuesday",items:[{t:"Lab Report 1",m:"PHYS 101A · 11:59 PM · 100 pts",v:"4d",s:"g"}]},
+          {d:"Wednesday",items:[{t:"Essay Outline",m:"ENGL 101 · 8:30 AM",v:"4d",s:"g"},{p:50,t:"Ch 3 Homework",r:"5.5/11"},{t:"Homework 04",m:"CS 101 · 11:59 PM · 70 pts",v:"5d",s:"g"},{t:"Weekly Participation",m:"CS 101 · 11:59 PM",v:"5d",s:"g"}]}],
+    week:[{d:"Thursday",items:[{t:"Calc Quiz (4.1, 4.2)",m:"Math 102 · all day · exam",v:"6d",s:"o",o:1},{t:"Math Quiz",m:"8:45 AM · exam",v:"6d",s:"o",o:1}]},
+          {d:"Friday",items:[{t:"Reading Response 1",m:"ENGL 101 · 11:59 PM",v:"7d",s:"g"}]}],
+    later:[{d:"Next week",items:[{t:"Physics Exam 1",m:"PHYS 101 · Oct 5",v:"10d",s:"y"},{t:"Chapter 3 Problems",m:"PHYS 101 · Oct 7",v:"12d",s:"n"}]}],
+    done:[{d:"Submitted",items:[{t:"Quiz 2",m:"PHYS 101 · 100/100",v:"✓",s:"n",f:1},{t:"Chapter 1 Problems",m:"PHYS 101 · 15/15",v:"✓",s:"n",f:1}]}]
   };
   var DAYS=[
     {k:"Fri 25",left:"2 classes left",ev:[{tm:"7:05",t:"Drove to NJIT",m:"71 min with traffic",car:1,done:1},{tm:"8:30",t:"Intro to Computing",m:"CS 101 · Science Hall 203",done:1},{now:"NOW 1:40"},{tm:"2:30",t:"Calculus II",m:"Math 102 · Science Hall 207 · in 50 min",next:1},{tm:"4:00",t:"Physics I",m:"Phys 101 · Science Hall 211"},{tm:"5:20",t:"Head home",m:"about 55 min right now",car:1}]},
-    {k:"Mon 28",left:"3 classes",ev:[{tm:"6:55",t:"Leave for NJIT",m:"about 71 min",car:1},{tm:"8:30",t:"English Composition",m:"ENGL 101 · Hall B 223"},{tm:"10:00",t:"Calculus II",m:"Math 102 · Science Hall 108"},{tm:"1:00",t:"Physics I",m:"Phys 101 · Science Hall 105"},{tm:"all day",t:"Calc II HW due",m:"8.1, 8.2",due:1}]},
-    {k:"Tue 29",left:"3 classes",ev:[{tm:"8:30",t:"Intro to Computing",m:"CS 101 · Science Hall 203"},{tm:"10:45",t:"Physics I Lab",m:"Phys 101A · Lab Hall 407"},{tm:"2:30",t:"Calculus II",m:"Math 102 · Science Hall 207"},{tm:"11:59",t:"Lab Report 2 due",m:"PHYS 101A · 100 pts",due:1}]},
+    {k:"Mon 28",left:"3 classes",ev:[{tm:"6:55",t:"Leave for NJIT",m:"about 71 min",car:1},{tm:"8:30",t:"English Composition",m:"ENGL 101 · Hall B 223"},{tm:"10:00",t:"Calculus II",m:"Math 102 · Science Hall 108"},{tm:"1:00",t:"Physics I",m:"Phys 101 · Science Hall 105"},{tm:"all day",t:"Calc II HW due",m:"4.1, 4.2",due:1}]},
+    {k:"Tue 29",left:"3 classes",ev:[{tm:"8:30",t:"Intro to Computing",m:"CS 101 · Science Hall 203"},{tm:"10:45",t:"Physics I Lab",m:"Phys 101A · Lab Hall 407"},{tm:"2:30",t:"Calculus II",m:"Math 102 · Science Hall 207"},{tm:"11:59",t:"Lab Report 1 due",m:"PHYS 101A · 100 pts",due:1}]},
     {k:"Wed 30",left:"1 class + advising",ev:[{tm:"8:30",t:"English Composition",m:"ENGL 101 · Hall B 223"},{tm:"11:10",t:"Advising appointment",m:"Zoom · registration"},{tm:"11:59",t:"3 things due",m:"ENGL 101 · PHYS 101 · CS 101",due:1}]}
   ];
   function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }

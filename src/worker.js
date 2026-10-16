@@ -283,7 +283,7 @@ function shortCode(code = "", name = "") {
   if (m) return `${m[1]} ${m[2]}`;
   if (c.startsWith("FYS")) return "FYS";
   const commons = name.match(/^(.*?Commons)\b/);
-  if (commons) return commons[1].trim();
+  if (commons) return commons[1].trim().slice(0, 24);
   return c || name.slice(0, 14);
 }
 async function canvasGet(env, path, params = {}) {
@@ -351,10 +351,16 @@ function placesFromEnv(env) {
 
 // The semester's common exams live in the EXAMS_JSON secret (a JSON array, see .dev.vars.example),
 // not in the page, so the schedule never lands in the repo.
+// kw becomes a RegExp in the page; an empty or broken one would hide every calendar exam or stop the schedule.
+function validPattern(kw) {
+  if (typeof kw !== "string" || !kw.trim()) return false;
+  try { new RegExp(kw, "i"); return true; } catch { return false; }
+}
+
 function examsFromEnv(env) {
   try {
     const list = JSON.parse(env.EXAMS_JSON || "[]");
-    return Array.isArray(list) ? list.filter((x) => x && x.title && x.start && x.end) : [];
+    return Array.isArray(list) ? list.filter((x) => x && x.title && x.start && x.end && validPattern(x.kw)) : [];
   } catch {
     return [];
   }

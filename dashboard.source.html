@@ -1085,7 +1085,7 @@
   function commonExams(){
     var cutoff=Date.now()-6*3600000;
     return CC.exams.map(function(x){
-      var st=new Date(x.start), en=new Date(x.end), re=new RegExp(x.kw,"i");
+      var st=new Date(x.start), en=new Date(x.end), re=(function(){ try{ return new RegExp(x.kw||"^$","i"); }catch(e){ return /^$/; } })();  // a bad kw never breaks the schedule
       if(en<cutoff) return null;
       var dup=events.some(function(e){ return e.__type==="exam"&&e.__start.toDateString()===st.toDateString()&&/exam|midterm/i.test(e.summary||"")&&re.test((e.summary||"")+" "+(e.description||"")); });
       if(dup) return null;
@@ -1528,16 +1528,16 @@
       notes.slice(0,10).forEach(function(n){ L.push("  ["+n.id+"] "+n.text); });
       return L.join("\n");
     }
-    var RULES = "You are the voice of Jeremy's Command Center: the terse, capable assistant inside his heads-up display. Jeremy is an NJIT computer-science freshman; he is speaking to you out loud on his phone or laptop.\n"
+    var RULES = "You are the voice of this Command Center: the terse, capable assistant inside the owner's heads-up display. The owner is a college student speaking to you out loud on a phone or laptop.\n"
       +"STYLE: answer in one to three short sentences, spoken-word friendly. Plain text only: no markdown, no lists, no emojis, no headers. Say times like a person would (\"tomorrow at 11:59 PM\", \"in about two hours\"). Lead with the answer.\n"
       +"TRUTH: the DATA block below is the only source of facts. Never invent assignments, times, emails or grades. If something isn't in the data, say so in a few words. All times are America/New_York.\n"
-      +"ACTIONS: When Jeremy tells you something to remember: a reminder, a thought, a to-do, a plan, or anything that is information for later rather than a question: call save_note with a clean one-line version of it, then confirm in a few words. When he says an item is done, fake, a glitch, not his, or asks to hide or dismiss it, call dismiss_item with that item's exact id from the data, then confirm. If it's ambiguous which item he means, ask one short question instead of guessing. Never call a tool for a plain question.\n"
+      +"ACTIONS: When the owner tells you something to remember: a reminder, a thought, a to-do, a plan, or anything that is information for later rather than a question: call save_note with a clean one-line version of it, then confirm in a few words. When he says an item is done, fake, a glitch, not his, or asks to hide or dismiss it, call dismiss_item with that item's exact id from the data, then confirm. If it's ambiguous which item he means, ask one short question instead of guessing. Never call a tool for a plain question.\n"
       +"Don't narrate tool use (\"calling save_note\"); just do it and tell him the outcome.";
 
     var tools=[
       { name:"save_note",
-        description:"Save something Jeremy said for later. Returns 'saved'. Use for reminders, ideas, to-dos, plans, or anything he tells you to remember. Pass a clean one-line version of what he said.",
-        inputSchema:{type:"object",properties:{text:{type:"string",description:"The note, one line, in Jeremy's words cleaned up."}},required:["text"]},
+        description:"Save something the owner said for later. Returns 'saved'. Use for reminders, ideas, to-dos, plans, or anything he tells you to remember. Pass a clean one-line version of what he said.",
+        inputSchema:{type:"object",properties:{text:{type:"string",description:"The note, one line, in the owner's words cleaned up."}},required:["text"]},
         execute:async function(inp){
           var text=String(inp.text||"").trim(); if(!text) throw new Error("empty note");
           if(!dbRef) throw new Error("storage unavailable in this view");
@@ -1553,7 +1553,7 @@
         execute:async function(inp){
           var id=String(inp.id||"").trim();
           var item=(canvas&&canvas.items||[]).filter(function(x){return x.id===id;})[0];
-          if(!item) throw new Error("no item with id "+id+": ask Jeremy which one he means");
+          if(!item) throw new Error("no item with id "+id+": ask the owner which one he means");
           if(!dbRef) throw new Error("storage unavailable in this view");
           if(ignored.indexOf(id)<0){ var next=ignored.concat([id]); ignored=next; renderCanvas(); await dbRef.doc("canvas/ignored").set({ids:next,updatedAt:new Date().toISOString()}); }
           addMsg("sys","dismissed · "+item.title);

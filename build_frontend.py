@@ -48,7 +48,7 @@ new_boot = r'''
     if(!examsLoaded) examsLoaded=api("/api/places").then(function(p){
       if(p&&Array.isArray(p.exams)) CC.exams=p.exams;
       if(!calSources.primary&&!calSources.canvas){ events=commonExams(); renderChips(); }   // exams show even if Calendar is down
-    }).catch(function(){});
+    }).catch(function(){ examsLoaded=null; });   // try again on the next refresh
     return examsLoaded;
   }
   async function loadCalendar(){

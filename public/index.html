@@ -1116,7 +1116,7 @@
   function commonExams(){
     var cutoff=Date.now()-6*3600000;
     return CC.exams.map(function(x){
-      var st=new Date(x.start), en=new Date(x.end), re=new RegExp(x.kw,"i");
+      var st=new Date(x.start), en=new Date(x.end), re=(function(){ try{ return new RegExp(x.kw||"^$","i"); }catch(e){ return /^$/; } })();  // a bad kw never breaks the schedule
       if(en<cutoff) return null;
       var dup=events.some(function(e){ return e.__type==="exam"&&e.__start.toDateString()===st.toDateString()&&/exam|midterm/i.test(e.summary||"")&&re.test((e.summary||"")+" "+(e.description||"")); });
       if(dup) return null;
@@ -1461,7 +1461,7 @@
     if(!examsLoaded) examsLoaded=api("/api/places").then(function(p){
       if(p&&Array.isArray(p.exams)) CC.exams=p.exams;
       if(!calSources.primary&&!calSources.canvas){ events=commonExams(); renderChips(); }   // exams show even if Calendar is down
-    }).catch(function(){});
+    }).catch(function(){ examsLoaded=null; });   // try again on the next refresh
     return examsLoaded;
   }
   async function loadCalendar(){

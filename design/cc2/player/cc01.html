@@ -293,7 +293,7 @@ const jack = new THREE.Mesh(new THREE.CircleGeometry(0.05, 32), new THREE.MeshBa
 const jackRing = new THREE.Mesh(new THREE.RingGeometry(0.05, 0.062, 32), new THREE.MeshBasicMaterial({ color:0x6d6a67 })); jackRing.rotation.x = -Math.PI/2; jackRing.position.set(-W/2+0.3, H/2+0.0015, 0.0); pod.add(jackRing);
 const port = new THREE.Mesh(new RoundedBoxGeometry(0.34, 0.02, 0.07, 2, 0.01), new THREE.MeshBasicMaterial({ color:0x030303 })); port.position.set(0, -H/2+0.004, 0.0); pod.add(port);
 
-// back: the real CC logo tile — Sligoil, grey C + orange C, framed like the app icon
+// back: the real CC logo tile: Sligoil, grey C + orange C, framed like the app icon
 const BC = document.createElement("canvas"); BC.width = 600; BC.height = 1000; const bx = BC.getContext("2d");
 function drawBack(){
   bx.clearRect(0,0,600,1000);
@@ -311,7 +311,7 @@ function drawBack(){
   bx.font = "500 20px 'Geist Mono', monospace"; bx.fillStyle = "rgba(255,255,255,.45)"; bx.fillText("COMMAND CENTER", 300, 764);
 }
 function drawSteelBack(){
-  // the CC mark: black tile, Sligoil, grey C + orange C — sits where a maker's logo would be
+  // the CC mark: black tile, Sligoil, grey C + orange C, sits where a maker's logo would be
   const tS = 214, tx0 = 300 - tS/2, ty0 = 250;
   bx.fillStyle = "#000"; bx.beginPath(); bx.roundRect ? bx.roundRect(tx0, ty0, tS, tS, 30) : bx.rect(tx0, ty0, tS, tS); bx.fill();
   bx.strokeStyle = "#2E2E2E"; bx.lineWidth = 2; bx.beginPath(); bx.roundRect ? bx.roundRect(tx0+1, ty0+1, tS-2, tS-2, 29) : bx.rect(tx0+1, ty0+1, tS-2, tS-2); bx.stroke();
