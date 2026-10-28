@@ -102,20 +102,21 @@
   @property --ga{syntax:"<number>";inherits:true;initial-value:.3}
   @property --gs{syntax:"<number>";inherits:true;initial-value:.8}
   .stage{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;
-    transition:--gx 1.2s var(--ease),--gy 1.2s var(--ease),--ga .9s,--gs .9s;animation:drift 26s ease-in-out infinite alternate}
+    transition:--ga .9s,--gs .9s}
   .stage > div{opacity:var(--gk,.6)}
   .stage .glow{position:absolute;inset:-20%;
-    background:radial-gradient(calc(300px * var(--gs)) calc(360px * var(--gs)) at calc(var(--gx) + var(--dx)) calc(var(--gy) + var(--dy)),rgba(255,150,70,var(--ga)),rgba(255,77,0,calc(var(--ga) * .8)) 30%,rgba(120,28,0,calc(var(--ga) * .55)) 58%,transparent 80%)}
+    background:radial-gradient(calc(300px * var(--gs)) calc(360px * var(--gs)) at 50% 50%,rgba(255,150,70,var(--ga)),rgba(255,77,0,calc(var(--ga) * .8)) 30%,rgba(120,28,0,calc(var(--ga) * .55)) 58%,transparent 80%)}
   .stage .dots{position:absolute;inset:-20%;opacity:calc(var(--ga) * 1.1 * var(--gk,.6));
     background:radial-gradient(circle,rgba(255,140,60,.7) .75px,transparent 1.15px) 0 0/4px 4px;
-    -webkit-mask-image:radial-gradient(calc(340px * var(--gs)) calc(400px * var(--gs)) at calc(var(--gx) + var(--dx)) calc(var(--gy) + var(--dy)),transparent 40%,#000 58%,transparent 82%);
-            mask-image:radial-gradient(calc(340px * var(--gs)) calc(400px * var(--gs)) at calc(var(--gx) + var(--dx)) calc(var(--gy) + var(--dy)),transparent 40%,#000 58%,transparent 82%)}
+    -webkit-mask-image:radial-gradient(calc(340px * var(--gs)) calc(400px * var(--gs)) at 50% 50%,transparent 40%,#000 58%,transparent 82%);
+            mask-image:radial-gradient(calc(340px * var(--gs)) calc(400px * var(--gs)) at 50% 50%,transparent 40%,#000 58%,transparent 82%)}
   body[data-l="calm"] .stage{--ga:.3;--gs:.8}
   body[data-l="soon"] .stage{--ga:.6;--gs:1}
   body[data-l="now"] .stage{--ga:.9;--gs:1.3}
-  body[data-l="now"] .stage .glow{animation:breathe 7s ease-in-out infinite}
-  @keyframes breathe{50%{opacity:.78;transform:scale(1.04)}}
-  @keyframes drift{0%{--dx:0%;--dy:0%}30%{--dx:-7%;--dy:5%}65%{--dx:5%;--dy:9%}100%{--dx:-4%;--dy:-3%}}
+  body[data-l="now"] .stage .glow{animation:drift 26s ease-in-out infinite alternate,breathe 7s ease-in-out infinite}
+  @keyframes breathe{50%{opacity:.78;scale:1.04}}
+  @keyframes drift{0%{transform:translate3d(0,0,0)}30%{transform:translate3d(-5%,3.5%,0)}65%{transform:translate3d(3.5%,6.5%,0)}100%{transform:translate3d(-3%,-2%,0)}}
+  .stage .glow,.stage .dots{will-change:transform,translate;animation:drift 26s ease-in-out infinite alternate;translate:calc(var(--gx) - 50%) calc(var(--gy) - 50%);transition:translate 1.2s var(--ease)}
   body[data-s="today"] .stage{--gx:82%;--gy:12%}
   body[data-s="work"] .stage{--gx:14%;--gy:4%}
   body[data-s="schedule"] .stage{--gx:88%;--gy:96%}
@@ -308,7 +309,7 @@
   .np-note{min-height:18px;margin-top:10px;text-align:center;font-family:var(--mono);font-size:8.4px;letter-spacing:.025em;text-transform:uppercase;color:var(--y)}
   /* the light takes the album's colour on this sheet, and only here */
   body.sheet-np .stage{--gx:50%;--gy:26%}
-  body.sheet-np .stage .glow{background:radial-gradient(calc(300px * var(--gs)) calc(360px * var(--gs)) at calc(var(--gx) + var(--dx)) calc(var(--gy) + var(--dy)),rgba(var(--art),var(--ga)),rgba(var(--art),calc(var(--ga) * .55)) 32%,rgba(var(--art),calc(var(--ga) * .22)) 58%,transparent 80%)}
+  body.sheet-np .stage .glow{background:radial-gradient(calc(300px * var(--gs)) calc(360px * var(--gs)) at 50% 50%,rgba(var(--art),var(--ga)),rgba(var(--art),calc(var(--ga) * .55)) 32%,rgba(var(--art),calc(var(--ga) * .22)) 58%,transparent 80%)}
   /* CC-01 player (public/cc01.js): the full-height sheet the album circle opens; the 2D sheet above stays as the fallback */
   .sheet.player{top:calc(env(safe-area-inset-top,0px) + 10px);max-height:none;max-width:560px;padding:10px 0 calc(12px + env(safe-area-inset-bottom,0px));
     display:flex;flex-direction:column;overflow:hidden;background:#0a0908}
@@ -434,7 +435,7 @@
   html[data-theme="light"],html[data-theme="light"] body{color:var(--ink);
     background:radial-gradient(900px 620px at 4% 104%,rgba(196,170,96,.22),transparent 70%),radial-gradient(760px 560px at 100% 0%,rgba(255,176,110,.26),transparent 70%),linear-gradient(180deg,#FBF4E8,#F1E4D0) fixed}
   html[data-theme="light"] ::selection{background:var(--o);color:#fff}
-  html[data-theme="light"] .stage .glow{background:radial-gradient(calc(340px * var(--gs)) calc(400px * var(--gs)) at calc(var(--gx) + var(--dx)) calc(var(--gy) + var(--dy)),rgba(255,160,90,calc(var(--ga) * .85)),rgba(255,77,0,calc(var(--ga) * .45)) 34%,rgba(255,120,60,calc(var(--ga) * .18)) 60%,transparent 82%)}
+  html[data-theme="light"] .stage .glow{background:radial-gradient(calc(340px * var(--gs)) calc(400px * var(--gs)) at 50% 50%,rgba(255,160,90,calc(var(--ga) * .85)),rgba(255,77,0,calc(var(--ga) * .45)) 34%,rgba(255,120,60,calc(var(--ga) * .18)) 60%,transparent 82%)}
   html[data-theme="light"] .stage .dots{background:radial-gradient(circle,rgba(255,77,0,.55) .75px,transparent 1.15px) 0 0/4px 4px}
   html[data-theme="light"] .fade-b{background:linear-gradient(rgba(247,238,223,0),rgba(247,238,223,.85) 70%,#F7EEDF)}
   /* frosted glass: white veil, bright rim, a soft warm shadow instead of black */
@@ -504,7 +505,7 @@
      fern | monstera | eucalyptus | tan | sprigs | autumn | none (remembered in cc.leaves). */
   .leaves{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;display:none;contain:strict}
   html[data-theme="light"] .leaves{display:block}
-  .leaves .lv{position:absolute;inset:-3%;background-size:cover;background-position:center;opacity:.9;will-change:transform;animation:lvdrift 26s ease-in-out infinite alternate}
+  .leaves .lv{position:absolute;inset:-3%;background-size:cover;background-position:center;opacity:.9}
   @keyframes lvdrift{from{transform:translate3d(-8px,0,0) rotate(-.3deg)}to{transform:translate3d(10px,6px,0) rotate(.4deg)}}
   .leaves .hl{position:absolute;left:0;top:0;width:var(--s,90px);height:auto;opacity:.92;will-change:transform;animation:lvfall var(--d,30s) linear var(--dl,0s) infinite}
   @keyframes lvfall{0%{transform:translate3d(0,-14vh,0) rotate(var(--r,0deg))}50%{transform:translate3d(5vw,56vh,0) rotate(calc(var(--r,0deg) + 190deg))}100%{transform:translate3d(-4vw,116vh,0) rotate(calc(var(--r,0deg) + 380deg))}}
@@ -525,9 +526,9 @@
   html[data-theme="light"] a.kpill:active{transform:translateY(-1px) scale(.992);transition-duration:.25s}
   /* more, and slower: the light breathes even when calm, the dock knob glides, progress fills grow in, and switching
      theme cross-fades instead of snapping */
-  html[data-theme="light"] .stage .glow{animation:breathe-soft 11s ease-in-out infinite}
-  html[data-theme="light"] body[data-l="now"] .stage .glow{animation:breathe 7s ease-in-out infinite}
-  @keyframes breathe-soft{50%{opacity:.8;transform:scale(1.05)}}
+  html[data-theme="light"] .stage .glow{animation:drift 26s ease-in-out infinite alternate,breathe-soft 11s ease-in-out infinite}
+  html[data-theme="light"] body[data-l="now"] .stage .glow{animation:drift 26s ease-in-out infinite alternate,breathe 7s ease-in-out infinite}
+  @keyframes breathe-soft{50%{opacity:.8;scale:1.05}}
   html[data-theme="light"] .fuse .knob{transition:transform .95s cubic-bezier(.22,.9,.25,1.12)}
   html[data-theme="light"] .pp .fill{transition:width 1.6s cubic-bezier(.22,.8,.2,1)}
   html[data-theme="light"] .kchip,html[data-theme="light"] .fuse .b{transition:background-color .6s,color .6s,transform .6s cubic-bezier(.22,.8,.2,1)}
