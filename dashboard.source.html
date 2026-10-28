@@ -1127,8 +1127,12 @@
       var stage=document.querySelector(".stage"); if(stage&&stage.parentNode) stage.parentNode.insertBefore(host,stage.nextSibling);
     })();
     apply(current(),false);
-    // a new screen: the page moves (body[data-s] changes), so settle it in again
-    new MutationObserver(function(ms){ if(ms.some(function(x){ return x.attributeName==="data-s"; })) enter(false); }).observe(document.body,{attributes:true,attributeFilter:["data-s"]});
+    // Entrance motion plays only when you deliberately go to another screen on the phone layout: a tap on the dock or keys 1 to 4.
+    // It never plays because you scrolled (the dock highlight follows the scroll, and the columns on a wide screen just scroll).
+    var narrow=window.matchMedia&&matchMedia("(max-width:820px)");
+    var dockRow=document.getElementById("dock-pages");
+    if(dockRow) dockRow.addEventListener("click",function(e){ if(narrow&&narrow.matches&&e.target.closest("button")) enter(false); });
+    window.addEventListener("keydown",function(e){ if(!(narrow&&narrow.matches)||e.metaKey||e.ctrlKey||e.altKey||!/^[1-4]$/.test(e.key)) return; var t=(e.target&&e.target.tagName)||""; if(/INPUT|TEXTAREA|SELECT/.test(t)) return; enter(false); });
   })();
 
   applyTune();
