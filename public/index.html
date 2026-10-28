@@ -17,7 +17,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png?v=2">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,400;0,500;1,400&family=Outfit:wght@300;400;500;600&family=Geist+Mono:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,400;0,500;1,400&family=Outfit:wght@300;400;500;600&family=Geist+Mono:wght@400;500;600;700&family=Syncopate:wght@400;700&family=Josefin+Sans:wght@500;600;700&display=swap">
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <style>
   /* Sligoil (Velvetyne, SIL OFL): only the "C" glyph, for the CC mark */
@@ -38,7 +38,7 @@
     --serif:"Petrona","Iowan Old Style",Georgia,serif;
     --dim:rgba(255,255,255,.55); --glass:rgba(255,255,255,.09); --rim:rgba(255,255,255,.2);
     --spring:cubic-bezier(.3,1.3,.4,1); --ease:cubic-bezier(.2,.7,.2,1);
-    --mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    --mono:"Syncopate","Geist Mono",ui-sans-serif,system-ui,sans-serif;
     --gut:16px;
   }
   *{box-sizing:border-box}
@@ -90,7 +90,7 @@
     html body[data-s="work"] .stage,html body[data-s="inbox"] .stage{--gx:78%;--gy:8%}
   }
 
-  .sync{font-family:var(--mono);font-size:10px;color:var(--faint);padding:0 16px 8px;letter-spacing:.04em;text-transform:uppercase}
+  .sync{font-family:var(--mono);font-size:8px;color:var(--faint);padding:0 16px 8px;letter-spacing:.020em;text-transform:uppercase}
   .sync.stale{color:var(--y)}
 
   /* ══ THE LIGHT ══ one warm light behind everything (design/cc2). Strength follows urgency (body[data-l]: calm · soon ·
@@ -123,7 +123,7 @@
   body{--art:255,110,40}
 
   /* ══ KIT ══ glass circle · tag · chip · pill row · progress pill · one white button (lifted from design/cc2/kit.html) */
-  .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+  .lbl{font-family:var(--mono);font-size:8.4px;letter-spacing:.040em;text-transform:uppercase;color:var(--dim)}
   .lead{margin:0;font-family:var(--serif);font-weight:400;font-size:23px;letter-spacing:-.01em;line-height:1.15;text-wrap:pretty}
   .lead em{font-style:normal;color:var(--o)} .lead b{font-weight:500} .lead .nb-rm{color:#BDBDBD}
   .display{margin:0;font-family:var(--serif);font-weight:400;font-size:36px;letter-spacing:-.02em;line-height:1.02;text-wrap:balance}
@@ -131,9 +131,9 @@
   .gap-s{margin-top:12px} .gap-m{margin-top:20px} .gap-l{margin-top:34px}
   .gc{width:42px;height:42px;border-radius:50%;flex:none;display:grid;place-items:center;border:0;color:#fff;padding:0;
       background:var(--glass);-webkit-backdrop-filter:blur(14px) saturate(1.5);backdrop-filter:blur(14px) saturate(1.5);
-      box-shadow:inset 0 0 0 1px var(--rim),inset 0 1px 0 rgba(255,255,255,.3),0 8px 20px rgba(0,0,0,.25);font:500 12px var(--mono);transition:transform .3s var(--spring)}
+      box-shadow:inset 0 0 0 1px var(--rim),inset 0 1px 0 rgba(255,255,255,.3),0 8px 20px rgba(0,0,0,.25);font:500 9.6px var(--mono);transition:transform .3s var(--spring)}
   button.gc{cursor:pointer} button.gc:active{transform:scale(.92)}
-  .gc.logo{display:flex;align-items:center;justify-content:center;background:#000;font:19px "Sligoil",var(--mono);font-synthesis:none;letter-spacing:.02em;white-space:nowrap;box-shadow:inset 0 0 0 1px #2E2E2E,0 8px 20px rgba(0,0,0,.3)}
+  .gc.logo{display:flex;align-items:center;justify-content:center;background:#000;font:19px "Sligoil",var(--mono);font-synthesis:none;letter-spacing:.010em;white-space:nowrap;box-shadow:inset 0 0 0 1px #2E2E2E,0 8px 20px rgba(0,0,0,.3)}
   .gc.logo .c1{color:#E6E6E6} .gc.logo .c2{color:#FF4D00}
   /* album circle: the cover of what's playing; tap to play/pause (the full sheet comes in step 4) */
   .gc.art{position:relative;overflow:hidden;background:linear-gradient(135deg,#ff4d00,#3b1d6e);box-shadow:inset 0 0 0 1px rgba(255,255,255,.3),0 8px 20px rgba(0,0,0,.3)}
@@ -143,7 +143,7 @@
   .gc.art.connect{background:var(--glass) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 18V6l10-2v12'/%3E%3Ccircle cx='6.5' cy='18' r='2.5'/%3E%3Ccircle cx='16.5' cy='16' r='2.5'/%3E%3C/svg%3E") center/18px no-repeat;box-shadow:inset 0 0 0 1px var(--rim),0 8px 20px rgba(0,0,0,.25)}
   .gc.art.warn{box-shadow:inset 0 0 0 1.5px var(--y),0 8px 20px rgba(0,0,0,.3)}
   .ktag{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 11px;border-radius:999px;color:#fff;
-       font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;
+       font-family:var(--mono);font-size:8.4px;letter-spacing:.025em;text-transform:uppercase;
        background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.28);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
   .dot{width:6px;height:6px;border-radius:50%;background:var(--o);flex:none}
   .dot.g{background:var(--g)} .dot.y{background:var(--y)} .dot.n{background:rgba(255,255,255,.35)}
@@ -162,8 +162,8 @@
   a.kpill:hover{box-shadow:inset 0 0 0 1px rgba(255,255,255,.3),inset 0 1px 0 rgba(255,255,255,.2)}
   .kpill .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
   .kpill .t b{font-weight:500;font-size:15px;letter-spacing:-.005em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .kpill .t span{font-family:var(--mono);font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .kpill .v{font-family:var(--mono);font-size:12px;color:#fff;flex:none} .kpill .v.o{color:var(--o)}
+  .kpill .t span{font-family:var(--mono);font-size:8px;letter-spacing:.025em;text-transform:uppercase;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .kpill .v{font-family:var(--mono);font-size:9.6px;color:#fff;flex:none} .kpill .v.o{color:var(--o)}
   .pp{position:relative;display:flex;align-items:center;min-height:50px;padding:0 16px;border-radius:25px;overflow:hidden;text-decoration:none;color:inherit;
       background:rgba(255,255,255,.06);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}
   .pp .fill{position:absolute;left:0;top:0;bottom:0;width:var(--p);min-width:50px;border-radius:25px;background:rgba(255,255,255,.17);
@@ -172,7 +172,7 @@
   .pp .l{position:relative;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52%}
   .pp .ticks{position:absolute;left:52%;right:112px;top:50%;display:flex;justify-content:space-between;transform:translateY(-50%)}
   .pp .ticks i{width:3px;height:3px;border-radius:50%;background:rgba(255,255,255,.4)}
-  .pp .r{position:relative;margin-left:auto;font-family:var(--mono);font-size:12px;display:flex;gap:10px}
+  .pp .r{position:relative;margin-left:auto;font-family:var(--mono);font-size:9.6px;display:flex;gap:10px}
   .pp .r .d{color:var(--dim);text-transform:uppercase;letter-spacing:.05em;font-size:10.5px;align-self:center}
   .cta{align-self:flex-start;display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 20px;border-radius:999px;background:#fff;color:#000;font:500 15px var(--sans);border:0;cursor:pointer;text-decoration:none;transition:transform .3s var(--spring)}
   .cta:active{transform:scale(.96)}
@@ -193,19 +193,19 @@
   .kchip[aria-pressed="true"]{background:#fff;color:#000;box-shadow:none}
   .kpill.done{background:rgba(255,255,255,.045);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
   .kpill.done .t b{color:rgba(255,255,255,.78)} .kpill.done .v{color:var(--g)}
-  .av{width:30px;height:30px;border-radius:50%;flex:none;display:grid;place-items:center;font:500 10.5px var(--mono);background:rgba(255,255,255,.1);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
+  .av{width:30px;height:30px;border-radius:50%;flex:none;display:grid;place-items:center;font:500 8.4px var(--mono);background:rgba(255,255,255,.1);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
   .kx{flex:none;width:28px;height:28px;margin-right:-6px;border-radius:50%;border:0;padding:0;display:grid;place-items:center;cursor:pointer;color:var(--dim);background:rgba(255,255,255,.08)}
   .kx:hover{color:#fff;background:rgba(255,255,255,.16)}
   .kx svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
   /* departures board: the next thing out, in split-flap letters. It flips only when that thing changes. */
   .dboard{padding:13px 13px 11px;border-radius:22px;background:rgba(0,0,0,.55);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
   .dboard .bh{display:flex;justify-content:space-between;margin-bottom:9px}
-  .dboard .bh b{font:500 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--y)}
+  .dboard .bh b{font:500 8.4px var(--mono);letter-spacing:.040em;text-transform:uppercase;color:var(--y)}
   .flap{--c:var(--g);display:flex;flex-direction:column;gap:6px}
   .flap.s-soon{--c:var(--o)} .flap.s-exam{--c:var(--y)}
   .flap .frow{display:flex;gap:4px}
   /* one tile (from design/cc2/kit.html): top and bottom halves; a flip folds the top half down, then the new bottom half */
-  .ft{position:relative;flex:none;width:var(--w);height:var(--h);perspective:calc(var(--h) * 5);font:var(--fs)/1 "Sligoil Flap",var(--mono);font-synthesis:none;color:var(--c)}
+  .ft{position:relative;flex:none;width:var(--w);height:var(--h);perspective:calc(var(--h) * 5);font:600 var(--fs)/1 "Josefin Sans","Sligoil Flap",sans-serif;font-synthesis:none;color:var(--c)}
   .ft .h{position:absolute;left:0;right:0;height:50%;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden}
   .ft .h span{position:absolute;left:0;right:0;height:200%;display:flex;align-items:center;justify-content:center}
   .ft .top,.ft .ftop{top:0;border-radius:var(--r) var(--r) 0 0;background:linear-gradient(#1c1c1c,#141414)}
@@ -213,7 +213,7 @@
   .ft .top span,.ft .ftop span{top:0} .ft .bot span,.ft .fbot span{top:-100%}
   .ft .ftop{z-index:2;transform-origin:50% 100%} .ft .fbot{z-index:2;transform-origin:50% 0;transform:rotateX(90deg)}
   .ft::after{content:"";position:absolute;left:0;right:0;top:50%;height:1px;margin-top:-.5px;background:#000;z-index:3}
-  .dboard .bm{display:flex;justify-content:space-between;gap:10px;margin-top:9px;font-family:var(--mono);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--dim)}
+  .dboard .bm{display:flex;justify-content:space-between;gap:10px;margin-top:9px;font-family:var(--mono);font-size:8px;letter-spacing:.020em;text-transform:uppercase;color:var(--dim)}
   .dboard .bm b{color:var(--g);font-weight:500;white-space:nowrap}
   .dboard .bm b.s-soon{color:var(--o)} .dboard .bm b.s-exam{color:var(--y)}
   @media (min-width:821px){ .kscreen{padding:36px 24px 24px} .kscreen.a-mail{padding-bottom:160px} }
@@ -222,7 +222,7 @@
   .rail{position:relative;display:flex;flex-direction:column;gap:8px;padding-left:60px}
   .rail::before{content:"";position:absolute;left:49px;top:8px;bottom:8px;width:1px;background:rgba(255,255,255,.2)}
   .ev{position:relative}
-  .ev .tm{position:absolute;left:-62px;top:17px;width:40px;text-align:right;font-family:var(--mono);font-size:10.5px;line-height:1.2;color:var(--dim);font-variant-numeric:tabular-nums}
+  .ev .tm{position:absolute;left:-62px;top:17px;width:40px;text-align:right;font-family:var(--mono);font-size:8.4px;line-height:1.2;color:var(--dim);font-variant-numeric:tabular-nums}
   .ev::before{content:"";position:absolute;left:-14px;top:21px;width:7px;height:7px;border-radius:50%;background:#000;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.6)}
   .ev.done{opacity:.55}
   .ev.next .tm{color:#fff}
@@ -232,7 +232,7 @@
   .kpill.late .ic{stroke:var(--o)} .kpill.late .t b{color:var(--o)}
   .nowline{position:relative;height:0;margin:4px 0}
   .nowline::before{content:"";position:absolute;left:-14px;right:0;top:0;height:1px;background:var(--o)}
-  .nowline::after{content:attr(data-t);position:absolute;left:-62px;top:-7px;width:40px;text-align:right;font:500 9.5px var(--mono);letter-spacing:.04em;color:var(--o)}
+  .nowline::after{content:attr(data-t);position:absolute;left:-62px;top:-7px;width:40px;text-align:right;font:500 7.6px var(--mono);letter-spacing:.020em;color:var(--o)}
   .nowline i{position:absolute;left:-14px;top:-3px;width:7px;height:7px;border-radius:50%;background:var(--o)}
 
   /* ══ TODAY ══ three answers, top to bottom: when to leave · what's due next · what's after that */
@@ -252,15 +252,15 @@
   /* ══ ROWS ══ */
   .state{padding:30px 16px;color:var(--muted);font-size:13px}
   .state strong{color:var(--ink);display:block;font-size:20px;font-weight:600;letter-spacing:-.03em;margin-bottom:6px}
-  .state .act{margin-top:10px;font-family:var(--mono);font-size:11.5px;color:var(--y)}
-  .retry{display:inline-block;margin-top:14px;background:var(--ink);border:0;color:var(--k);font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;padding:10px 16px;cursor:pointer;text-decoration:none;
+  .state .act{margin-top:10px;font-family:var(--mono);font-size:9.2px;color:var(--y)}
+  .retry{display:inline-block;margin-top:14px;background:var(--ink);border:0;color:var(--k);font-family:var(--mono);font-size:8.8px;font-weight:500;letter-spacing:.040em;text-transform:uppercase;padding:10px 16px;cursor:pointer;text-decoration:none;
     clip-path:polygon(0 4px,4px 4px,4px 0,calc(100% - 4px) 0,calc(100% - 4px) 4px,100% 4px,100% calc(100% - 4px),calc(100% - 4px) calc(100% - 4px),calc(100% - 4px) 100%,4px 100%,4px calc(100% - 4px),0 calc(100% - 4px))}
   .retry:hover{background:var(--o)}
-  .scanning{padding:30px 16px;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .scanning{padding:30px 16px;font-family:var(--mono);font-size:8.4px;letter-spacing:.040em;text-transform:uppercase;color:var(--muted)}
   .scanning::after{content:"_";animation:blink 1s steps(1) infinite;color:var(--o)}
   .scanning small{display:block;margin-top:6px;color:var(--faint)}
-  .foot{margin-top:18px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
-  .foot button{background:none;border:0;padding:0;cursor:pointer;color:var(--muted);letter-spacing:inherit;text-transform:inherit;font-family:var(--mono);font-size:10.5px}
+  .foot{margin-top:18px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-family:var(--mono);font-size:8.4px;letter-spacing:.030em;text-transform:uppercase;color:var(--faint)}
+  .foot button{background:none;border:0;padding:0;cursor:pointer;color:var(--muted);letter-spacing:inherit;text-transform:inherit;font-family:var(--mono);font-size:8.4px}
   .foot button:hover{color:var(--o)}
 
   /* ══ MOTION ══ */
@@ -305,7 +305,7 @@
   .fuse.sm .b{width:50px;height:50px} .fuse.sm .b.big{width:60px;height:60px;margin-block:-5px}
   .fuse .b.fillsvg svg{fill:currentColor;stroke:none}
   .fuse .b.solid{background:#fff;color:#000;box-shadow:0 8px 20px rgba(0,0,0,.3)}
-  .np-note{min-height:18px;margin-top:10px;text-align:center;font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--y)}
+  .np-note{min-height:18px;margin-top:10px;text-align:center;font-family:var(--mono);font-size:8.4px;letter-spacing:.025em;text-transform:uppercase;color:var(--y)}
   /* the light takes the album's colour on this sheet, and only here */
   body.sheet-np .stage{--gx:50%;--gy:26%}
   body.sheet-np .stage .glow{background:radial-gradient(calc(300px * var(--gs)) calc(360px * var(--gs)) at calc(var(--gx) + var(--dx)) calc(var(--gy) + var(--dy)),rgba(var(--art),var(--ga)),rgba(var(--art),calc(var(--ga) * .55)) 32%,rgba(var(--art),calc(var(--ga) * .22)) 58%,transparent 80%)}
@@ -317,22 +317,22 @@
   .player canvas{flex:1;min-height:0;width:100%;display:block;touch-action:none;cursor:grab;outline:none}
   .player canvas.drag{cursor:grabbing}
   .player canvas:focus-visible{box-shadow:inset 0 0 0 2px var(--o)}
-  .player .ld{position:absolute;left:0;right:0;top:46%;text-align:center;font:500 11px var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--dim);pointer-events:none;transition:opacity .4s}
+  .player .ld{position:absolute;left:0;right:0;top:46%;text-align:center;font:500 8.8px var(--mono);letter-spacing:.045em;text-transform:uppercase;color:var(--dim);pointer-events:none;transition:opacity .4s}
   .player .ld .dots{display:inline-block;width:3ch;text-align:left}
   .player .fin{flex:none;display:flex;flex-wrap:nowrap;justify-content:center;gap:5px;padding:6px 12px 0}
   .player .fin button{display:flex;align-items:center;gap:7px;height:32px;padding:0 10px 0 7px;border-radius:999px;border:0;cursor:pointer;white-space:nowrap;
-    background:rgba(255,255,255,.07);color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.16);font:500 11px var(--mono);letter-spacing:.05em;text-transform:uppercase}
+    background:rgba(255,255,255,.07);color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.16);font:500 8.8px var(--mono);letter-spacing:.025em;text-transform:uppercase}
   .player .fin button[aria-pressed="true"]{background:#fff;color:#000;box-shadow:none}
   .player .fin .fsw{width:15px;height:15px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(255,255,255,.35);flex:none}
-  .player .hint{flex:none;margin-top:8px;text-align:center;font:500 10.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--dim);padding:0 12px}
+  .player .hint{flex:none;margin-top:8px;text-align:center;font:500 8.4px var(--mono);letter-spacing:.030em;text-transform:uppercase;color:var(--dim);padding:0 12px}
   /* Talk */
-  .talk .status{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+  .talk .status{font-family:var(--mono);font-size:8.4px;letter-spacing:.040em;text-transform:uppercase;color:var(--dim)}
   .talk .status.live{color:var(--o)} .talk .status.busy{color:var(--y)}
   .talk .log{display:flex;flex-direction:column;gap:8px;min-height:120px;max-height:min(46vh,420px);overflow-y:auto;margin-top:16px}
   .talk .msg{max-width:86%;padding:10px 14px;border-radius:20px;line-height:1.4}
   .talk .msg.you{align-self:flex-end;background:#fff;color:#000}
   .talk .msg.ai{align-self:flex-start;background:var(--glass);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
-  .talk .msg.sys{align-self:center;max-width:100%;padding:2px 0;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);text-align:center}
+  .talk .msg.sys{align-self:center;max-width:100%;padding:2px 0;font-family:var(--mono);font-size:8px;letter-spacing:.030em;text-transform:uppercase;color:var(--dim);text-align:center}
   .talk .msg.interim{opacity:.6}
   .talkform{display:flex;gap:8px;align-items:center;margin-top:14px}
   .talkform input{flex:1;min-width:0;height:50px;padding:0 18px;border:0;border-radius:25px;color:#fff;font:15px var(--sans);background:var(--glass);box-shadow:inset 0 0 0 1px rgba(255,255,255,.16);outline:none}
@@ -402,6 +402,21 @@
     .dock{bottom:var(--dockb)}
     body::after{opacity:calc(var(--grain,.07) * .7)}
   }
+
+
+  /* ══ NO CLIPPED TEXT ══ titles run to two lines instead of ending in "…"; detail lines wrap; the progress pill keeps its bar
+     under the words (it used to float a white blob and an orange tick over the first letters) */
+  .kpill .t b{white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;text-overflow:clip;line-height:1.2}
+  .kpill .t span{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.35}
+  .pp:not(.vol){padding:8px 16px 16px;min-height:58px}
+  .pp:not(.vol)::before{content:"";position:absolute;left:16px;right:16px;bottom:9px;height:3px;border-radius:3px;background:rgba(255,255,255,.16)}
+  .pp:not(.vol) .fill{left:16px;right:auto;top:auto;bottom:9px;height:3px;min-width:6px;max-width:calc(100% - 32px);border-radius:3px;background:var(--o);box-shadow:none}
+  .pp:not(.vol) .fill::after,.pp:not(.vol) .ticks{display:none}
+  .pp:not(.vol) .l{max-width:none;flex:1;min-width:0;white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;text-overflow:clip;line-height:1.2;padding-right:12px}
+  .pp:not(.vol) .r{flex:none;align-items:center}
+  .dboard .bm{flex-wrap:wrap;row-gap:4px} .dboard .bm > *{white-space:nowrap}
+  html[data-theme="light"] .pp:not(.vol)::before{background:rgba(23,19,15,.1)}
+  html[data-theme="light"] .pp:not(.vol) .fill{background:var(--o);box-shadow:none}
 
   /* ══ LIGHT ══ same identity (orange means "act", Petrona / Outfit / Geist Mono, the drifting warm light, the black
      departures board) on warm paper with frosted glass. Chosen by the toggle in the top bar, else the system setting
