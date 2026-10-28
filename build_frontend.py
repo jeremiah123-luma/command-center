@@ -179,7 +179,7 @@ head = f'''<!doctype html>
 <title>{title}</title>
 <meta name="description" content="Live personal dashboard: Canvas coursework, schedule, inbox, and a voice link.">
 <meta name="theme-color" content="#000000">
-<script>try{{var t=localStorage.getItem("cc.theme");if(t!=="light"&&t!=="dark")t=matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";document.documentElement.dataset.theme=t;if(t==="light"){{document.querySelector('meta[name="theme-color"]').content="#F4F0E9"}}}}catch(e){{}}</script>
+<script>try{{var t=localStorage.getItem("cc.theme");if(t!=="light"&&t!=="dark")t=matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";document.documentElement.dataset.theme=t;if(t==="light"){{document.querySelector('meta[name="theme-color"]').content="#F7EEDF"}}}}catch(e){{}}</script>
 <meta name="color-scheme" content="dark">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">

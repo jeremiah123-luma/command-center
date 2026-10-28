@@ -6,7 +6,7 @@
 <title>Command Center</title>
 <meta name="description" content="Live personal dashboard: Canvas coursework, schedule, inbox, and a voice link.">
 <meta name="theme-color" content="#000000">
-<script>try{var t=localStorage.getItem("cc.theme");if(t!=="light"&&t!=="dark")t=matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";document.documentElement.dataset.theme=t;if(t==="light"){document.querySelector('meta[name="theme-color"]').content="#F4F0E9"}}catch(e){}</script>
+<script>try{var t=localStorage.getItem("cc.theme");if(t!=="light"&&t!=="dark")t=matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";document.documentElement.dataset.theme=t;if(t==="light"){document.querySelector('meta[name="theme-color"]').content="#F7EEDF"}}catch(e){}</script>
 <meta name="color-scheme" content="dark">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -408,19 +408,20 @@
      (html[data-theme] is set before first paint). The now-playing sheets keep their dark look. */
   html[data-theme="light"]{
     color-scheme:light;
-    --k:#F4F0E9; --k2:#EEE9E0; --k3:#E8E2D8;
+    --k:#F7EEDF; --k2:#F1E6D4; --k3:#EADDC8;
     --line:#D8D0C3; --line-2:#E6E0D5;
     --ink:#17130F; --ink-2:#3B342B; --muted:#7A7064; --faint:#B7ADA0;
     --o-soft:rgba(255,77,0,.1);
     --r:#D93636; --y:#B07A00; --g:#0A9A62;
-    --dim:rgba(23,19,15,.58); --glass:rgba(255,255,255,.58); --rim:rgba(255,255,255,.95);
+    --dim:rgba(40,26,12,.6); --glass:rgba(255,251,244,.6); --rim:rgba(255,255,255,.95);
     --fg:23,19,15;
   }
-  html[data-theme="light"],html[data-theme="light"] body{background:linear-gradient(180deg,#F8F4ED,#EDE7DC) fixed;color:var(--ink)}
+  html[data-theme="light"],html[data-theme="light"] body{color:var(--ink);
+    background:radial-gradient(900px 620px at 4% 104%,rgba(196,170,96,.22),transparent 70%),radial-gradient(760px 560px at 100% 0%,rgba(255,176,110,.26),transparent 70%),linear-gradient(180deg,#FBF4E8,#F1E4D0) fixed}
   html[data-theme="light"] ::selection{background:var(--o);color:#fff}
   html[data-theme="light"] .stage .glow{background:radial-gradient(calc(340px * var(--gs)) calc(400px * var(--gs)) at calc(var(--gx) + var(--dx)) calc(var(--gy) + var(--dy)),rgba(255,160,90,calc(var(--ga) * .85)),rgba(255,77,0,calc(var(--ga) * .45)) 34%,rgba(255,120,60,calc(var(--ga) * .18)) 60%,transparent 82%)}
   html[data-theme="light"] .stage .dots{background:radial-gradient(circle,rgba(255,77,0,.55) .75px,transparent 1.15px) 0 0/4px 4px}
-  html[data-theme="light"] .fade-b{background:linear-gradient(rgba(244,240,233,0),rgba(244,240,233,.85) 70%,#F4F0E9)}
+  html[data-theme="light"] .fade-b{background:linear-gradient(rgba(247,238,223,0),rgba(247,238,223,.85) 70%,#F7EEDF)}
   /* frosted glass: white veil, bright rim, a soft warm shadow instead of black */
   html[data-theme="light"] .gc,html[data-theme="light"] .fuse .b,html[data-theme="light"] .dock .mic{color:var(--ink);
     box-shadow:inset 0 0 0 1px var(--rim),inset 0 1px 0 #fff,0 8px 24px rgba(80,52,24,.14)}
@@ -453,7 +454,16 @@
   html[data-theme="light"] .kempty,html[data-theme="light"] #hero-meta{color:rgba(23,19,15,.66)}
   html[data-theme="light"] .lead .nb-rm{color:#6c6358}
   /* the departures board stays a black board; it carries its own light-on-dark text */
-  html[data-theme="light"] .dboard{--dim:rgba(255,255,255,.55);background:rgba(18,14,10,.94);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08),0 14px 36px rgba(80,52,24,.22)}
+  html[data-theme="light"] .dboard{background:linear-gradient(160deg,rgba(255,255,255,.62),rgba(255,247,236,.34));
+    -webkit-backdrop-filter:blur(24px) saturate(1.7);backdrop-filter:blur(24px) saturate(1.7);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.95),inset 0 1px 0 #fff,inset 0 -18px 30px rgba(255,170,100,.08),0 18px 44px rgba(120,70,30,.16)}
+  html[data-theme="light"] .dboard .bm{color:rgba(23,19,15,.6)}
+  /* the flap tiles become frosted glass cards; letters keep their colour, deepened a touch so they read on light */
+  html[data-theme="light"] .ft{color:color-mix(in srgb,var(--c) 86%,#2a1200)}
+  html[data-theme="light"] .ft .top,html[data-theme="light"] .ft .ftop{background:linear-gradient(rgba(255,255,255,.78),rgba(255,255,255,.4))}
+  html[data-theme="light"] .ft .bot,html[data-theme="light"] .ft .fbot{background:linear-gradient(rgba(255,255,255,.3),rgba(255,236,214,.52))}
+  html[data-theme="light"] .ft::after{background:rgba(23,19,15,.2);box-shadow:0 1px 0 rgba(255,255,255,.9)}
+  html[data-theme="light"] .ft{filter:drop-shadow(0 3px 5px rgba(120,70,30,.12))}
   /* schedule rail */
   html[data-theme="light"] .ev::before{background:var(--k);box-shadow:inset 0 0 0 1.5px rgba(23,19,15,.45)}
   html[data-theme="light"] .ev.next .tm{color:var(--ink)} html[data-theme="light"] .ev.next::before{background:var(--ink)}
@@ -473,6 +483,17 @@
   html[data-theme="light"] .talk .opts input:checked + .sw::after{background:#fff}
   /* start-up on paper: same zoom, light ground and an ink first C */
   html[data-theme="light"] .boot{background:var(--k)} html[data-theme="light"] .boot .mk .c1{color:#17130F}
+
+  /* leaf shadows: two soft branches cast across the paper like sun through a window, swaying very slowly (drawn in
+     the leaf script next to the theme switch; light theme only) */
+  .leaves{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;display:none}
+  html[data-theme="light"] .leaves{display:block}
+  .leaves svg{position:absolute;overflow:visible;mix-blend-mode:multiply;filter:blur(2.2px);opacity:.27}
+  .leaves .br{transform-box:fill-box;animation:lsway var(--sd,13s) ease-in-out var(--sl,0s) infinite alternate}
+  .leaves .lf{transform-box:fill-box;transform-origin:50% 100%;animation:lflut var(--fd,7s) ease-in-out var(--fl,0s) infinite alternate}
+  @keyframes lsway{from{transform:rotate(-1.6deg)}to{transform:rotate(1.8deg) translate(5px,3px)}}
+  @keyframes lflut{from{transform:rotate(-3deg)}to{transform:rotate(3.5deg)}}
+  @media (prefers-reduced-motion:reduce){.leaves .br,.leaves .lf{animation:none}}
 
   /* the theme switch (top bar): sun in the dark theme, moon in the light one */
   .gc.tt svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
@@ -1094,7 +1115,7 @@
     function apply(t,replay){
       if(replay){ root.classList.add("theming"); clearTimeout(apply.tt); apply.tt=setTimeout(function(){ root.classList.remove("theming"); },1000); }
       root.dataset.theme=t;
-      var m=document.querySelector('meta[name="theme-color"]'); if(m) m.content=t==="light" ? "#F4F0E9" : "#000000";
+      var m=document.querySelector('meta[name="theme-color"]'); if(m) m.content=t==="light" ? "#F7EEDF" : "#000000";
       var cs=document.querySelector('meta[name="color-scheme"]'); if(cs) cs.content=t;
       if(btn){ btn.setAttribute("aria-label",t==="light" ? "Switch to dark theme" : "Switch to light theme"); }
       CC.emit("theme");
@@ -1103,6 +1124,34 @@
     CC.setTheme=function(t){ try{ localStorage.setItem("cc.theme",t); }catch(e){} apply(t,true); };
     if(btn) btn.addEventListener("click",function(){ CC.setTheme(root.dataset.theme==="light" ? "dark" : "light"); });
     if(mq&&mq.addEventListener) mq.addEventListener("change",function(){ if(!saved()) apply(current(),true); });
+    // Leaf shadows. Seeded, so the branches are the same every visit; built once, shown only in light.
+    (function(){
+      var host=document.createElement("div"); host.className="leaves"; host.setAttribute("aria-hidden","true");
+      var seed=11; function rnd(){ seed=(seed*16807)%2147483647; return seed/2147483647; }
+      var LEAF="M0 0C14-14 16-50 0-92C-16-50-14-14 0 0Z";
+      function branch(w,h,x,y,rot,n,scale,sd,sl,tint){
+        var ns="http://www.w3.org/2000/svg", svg=document.createElementNS(ns,"svg"); svg.setAttribute("width",w); svg.setAttribute("height",h); svg.setAttribute("viewBox","0 0 "+w+" "+h);
+        svg.style.left=x; svg.style.top=y; svg.style.transform="rotate("+rot+"deg)"; svg.style.transformOrigin="0 0"; svg.style.color=tint;
+        var g=document.createElementNS(ns,"g"); g.setAttribute("class","br"); g.style.setProperty("--sd",sd+"s"); g.style.setProperty("--sl",sl+"s");
+        function yAt(i){ return Math.sin(i*.55)*h*.12+i*h*.05; }
+        var stem=document.createElementNS(ns,"path"), d="M0 0", px=0, py=0;
+        for(var i=1;i<=n;i++){ var nx=i*w/n, ny=yAt(i); d+=" Q"+((px+nx)/2)+" "+(py-6)+" "+nx+" "+ny; px=nx; py=ny; }
+        stem.setAttribute("d",d); stem.setAttribute("fill","none"); stem.setAttribute("stroke","currentColor"); stem.setAttribute("stroke-width","2.2"); stem.setAttribute("stroke-linecap","round"); g.appendChild(stem);
+        for(var j=1;j<=n;j++){ var cx=j*w/n, cy=yAt(j);
+          for(var side=-1;side<=1;side+=2){ if(rnd()<.18) continue;
+            var o=document.createElementNS(ns,"g"), l=document.createElementNS(ns,"path"), sc=scale*(.75+rnd()*.7), ang=side*(48+rnd()*38)+(rnd()*14-7);
+            o.setAttribute("transform","translate("+cx+" "+cy+") rotate("+(ang+90)+") scale("+sc+")");   // placement on the outer group, flutter on the leaf
+            l.setAttribute("d",LEAF); l.setAttribute("fill","currentColor"); l.setAttribute("class","lf");
+            l.style.setProperty("--fd",(5+rnd()*5)+"s"); l.style.setProperty("--fl",(-rnd()*8)+"s");
+            o.appendChild(l); g.appendChild(o); } }
+        var to=document.createElementNS(ns,"g"), tip=document.createElementNS(ns,"path"); tip.setAttribute("d",LEAF); tip.setAttribute("fill","currentColor"); tip.setAttribute("class","lf");
+        to.setAttribute("transform","translate("+w+" "+yAt(n)+") rotate(90) scale("+(scale*1.15)+")"); to.appendChild(tip); g.appendChild(to);
+        svg.appendChild(g); host.appendChild(svg); }
+      branch(720,260,"101%","-4%",125,9,1.2,15,0,"#3E4A22");
+      branch(520,220,"101%","34%",152,7,.85,19,-6,"#5A5A2A");
+      branch(600,240,"-3%","104%",-40,8,1.1,17,-3,"#44512A");
+      var stage=document.querySelector(".stage"); if(stage&&stage.parentNode) stage.parentNode.insertBefore(host,stage.nextSibling);
+    })();
     apply(current(),false);
     // a new screen: the page moves (body[data-s] changes), so settle it in again
     new MutationObserver(function(ms){ if(ms.some(function(x){ return x.attributeName==="data-s"; })) enter(); }).observe(document.body,{attributes:true,attributeFilter:["data-s"]});
