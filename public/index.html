@@ -194,7 +194,7 @@
   .kchip[aria-pressed="true"]{background:#fff;color:#000;box-shadow:none}
   .kpill.done{background:rgba(255,255,255,.045);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
   .kpill.done .t b{color:rgba(255,255,255,.78)} .kpill.done .v{color:var(--g)}
-  .av{width:30px;height:30px;border-radius:50%;flex:none;display:grid;place-items:center;font:500 8.4px var(--mono);background:rgba(255,255,255,.1);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
+  .av{position:relative;overflow:hidden;width:30px;height:30px;border-radius:50%;flex:none;display:grid;place-items:center;font:500 8.4px var(--mono);background:rgba(255,255,255,.1);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
   .kx{flex:none;width:28px;height:28px;margin-right:-6px;border-radius:50%;border:0;padding:0;display:grid;place-items:center;cursor:pointer;color:var(--dim);background:rgba(255,255,255,.08)}
   .kx:hover{color:#fff;background:rgba(255,255,255,.16)}
   .kx svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
@@ -461,6 +461,7 @@
   html[data-theme="light"] .pp .fill{background:rgba(255,255,255,.85);box-shadow:inset 0 0 0 1px #fff,0 4px 14px rgba(80,52,24,.1)}
   html[data-theme="light"] .pp .fill::after{background:var(--o)}
   html[data-theme="light"] .pp .ticks i{background:rgba(23,19,15,.28)}
+  .av.logo{background:#fff;color:transparent;box-shadow:inset 0 0 0 1px rgba(23,19,15,.1)} .av.logo img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:4px;box-sizing:border-box;border-radius:50%}
   html[data-theme="light"] .av{background:rgba(255,255,255,.7);box-shadow:inset 0 0 0 1px rgba(23,19,15,.12)}
   html[data-theme="light"] .kx{background:rgba(23,19,15,.07)}
   html[data-theme="light"] .kx:hover{color:var(--ink);background:rgba(23,19,15,.14)}
@@ -857,23 +858,36 @@
 
   /* ── INBOX ── */
   function senderName(raw){ if(!raw) return "Unknown"; var m=raw.match(/^\s*"?([^"<]+?)"?\s*<([^>]+)>/), nm=m?m[1].trim():raw.trim(), email=m?m[2]:raw; if(!nm||nm.indexOf("@")>-1) nm=(email.split("@")[0]||nm); return nm.replace(/[._]/g," ").replace(/\b\w/g,function(c){return c.toUpperCase();}); }
+  function senderDomain(raw){ var m=String(raw||"").match(/@([A-Za-z0-9.-]+\.[A-Za-z]{2,})/); return m?m[1].toLowerCase():""; }
   function initials(n){var p=n.split(/\s+/).filter(Boolean);return ((p[0]||"?")[0]+(p[1]?p[1][0]:"")).toUpperCase();}
   function decode(s){return (s||"").replace(/&#39;/g,"'").replace(/&amp;/g,"&").replace(/&quot;/g,'"').replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&nbsp;/g," ");}
   var mailRows=[];
   function renderMail(threads){
     var body=$("mail-body"), rows=[];
     (threads||[]).forEach(function(t){ var msgs=t.messages||[], m=msgs[msgs.length-1]||msgs[0]; if(!m) return;
-      rows.push({id:t.id,name:senderName(m.sender),subj:decode(m.subject||"(no subject)"),snip:decode(m.snippet||""),ts:Number(m.internalDate)||(m.date?Date.parse(m.date):Date.now()),important:(m.labelIds||[]).indexOf("IMPORTANT")>-1}); });
+      rows.push({id:t.id,name:senderName(m.sender),dom:senderDomain(m.sender),subj:decode(m.subject||"(no subject)"),snip:decode(m.snippet||""),ts:Number(m.internalDate)||(m.date?Date.parse(m.date):Date.now()),important:(m.labelIds||[]).indexOf("IMPORTANT")>-1}); });
     rows.sort(function(a,b){if(a.important!==b.important)return a.important?-1:1;return b.ts-a.ts;});
     mailRows=rows; unreadCount=rows.length; try{renderOverview();}catch(e){}
     $("mail-badge").textContent=rows.length+" unread"; setBadge($("tn-3"),rows.length,"Inbox","unread");
     if(!rows.length){ body.innerHTML='<p class="kempty">Inbox zero. Nothing unread from the last two weeks.</p>'; return; }
     function mailRow(r){ return '<a class="kpill" href="https://mail.google.com/mail/u/0/#inbox/'+esc(r.id)+'" target="_blank" rel="noopener" title="'+esc(r.snip)+'">'
-      +'<span class="av">'+esc(initials(r.name))+'</span><span class="t"><b>'+esc(r.subj)+'</b><span>'+esc(r.name+" · "+ago(r.ts).replace(" ago",""))+'</span></span>'
+      +'<span class="av"'+(r.dom?' data-d="'+esc(r.dom)+'"':'')+'>'+esc(initials(r.name))+'</span><span class="t"><b>'+esc(r.subj)+'</b><span>'+esc(r.name+" · "+ago(r.ts).replace(" ago",""))+'</span></span>'
       +'<span class="dot'+(r.important?'':' n')+'"></span></a>'; }
     var imp=rows.filter(function(r){return r.important;}), rest=rows.filter(function(r){return !r.important;}).slice(0,Math.max(0,20-imp.length));
     body.innerHTML=(imp.length?'<span class="lbl">Important</span>'+imp.map(mailRow).join(""):"")
       +(rest.length?'<span class="lbl">'+(imp.length?"Everything else":"Unread")+'</span>'+rest.map(mailRow).join(""):"");
+    loadLogos(body);
+  }
+  var logoState={};   // domain -> "ok" | "none", so a row that re-renders doesn't ask again
+  function loadLogos(root){
+    root.querySelectorAll(".av[data-d]").forEach(function(av){
+      var d=av.dataset.d, st=logoState[d];
+      if(st==="none") return;
+      var img=new Image(); img.alt=""; img.decoding="async";
+      img.onload=function(){ if(img.naturalWidth<2){ logoState[d]="none"; return; } logoState[d]="ok"; av.classList.add("logo"); av.appendChild(img); };
+      img.onerror=function(){ logoState[d]="none"; };
+      img.src="/api/logo?d="+encodeURIComponent(d);
+    });
   }
 
   function errCopy(code,server){

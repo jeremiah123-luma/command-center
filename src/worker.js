@@ -63,6 +63,7 @@ export default {
       if (path === "/api/calendar") return json(await getCalendar(env));
       if (path === "/api/gmail") return json(await getGmail(env));
       // Home coordinates (HOME_LATLON) and the exam schedule (EXAMS_JSON) live in secrets, never in the code.
+      if (path === "/api/logo") return getLogo(env, url.searchParams.get("d"));
       if (path === "/api/places") return json(placesFromEnv(env));
       if (path === "/api/state") return request.method === "POST" ? postState(request, env) : json(await getState(env));
       if (path === "/api/chat") return request.method === "POST" ? chat(request, env) : json({ error: "POST only" }, 405);
@@ -89,6 +90,72 @@ export default {
 };
 
 /* ───────────────────────── helpers ───────────────────────── */
+
+/* ---------------------------------------------------------------- sender logos
+   /api/logo?d=<domain> returns that organisation's own icon (the apple-touch-icon or favicon its site publishes), cached in KV
+   for 30 days (misses for 7). The browser only ever talks to this Worker, so no logo service learns who writes to you.
+   Personal mail domains and anything that isn't a plain public hostname answer 204 and the page shows the sender's initials. */
+const FREE_MAIL = new Set(["gmail.com", "googlemail.com", "yahoo.com", "ymail.com", "outlook.com", "hotmail.com", "live.com", "msn.com", "icloud.com", "me.com", "mac.com", "aol.com", "proton.me", "protonmail.com", "gmx.com", "gmx.net", "mail.com", "zoho.com", "fastmail.com", "hey.com"]);
+const TWO_PART_TLDS = new Set(["co.uk", "org.uk", "ac.uk", "com.au", "co.jp", "co.nz", "com.br", "co.in", "com.mx"]);
+function logoHosts(raw) {
+  const d = String(raw || "").trim().toLowerCase().replace(/\.$/, "");
+  if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(d) || d.length > 100) return [];
+  if (/^\d+(\.\d+)*$/.test(d) || /\.(local|internal|localhost|lan|home|test|invalid)$/.test(d)) return [];
+  const labels = d.split(".");
+  const keep = TWO_PART_TLDS.has(labels.slice(-2).join(".")) ? 3 : 2;
+  const root = labels.slice(-keep).join(".");
+  if (FREE_MAIL.has(root)) return [];
+  return d === root ? [root] : [d, root];
+}
+function pickIconHref(html, base) {
+  const out = [];
+  for (const m of html.matchAll(/<link\b[^>]*>/gi)) {
+    const tag = m[0], rel = (tag.match(/\brel=["']([^"']+)["']/i) || [])[1] || "", href = (tag.match(/\bhref=["']([^"']+)["']/i) || [])[1];
+    if (!href || !/\bicon\b|apple-touch-icon/i.test(rel) || /mask-icon/i.test(rel)) continue;
+    const size = parseInt(((tag.match(/\bsizes=["'](\d+)/i) || [])[1]) || "0", 10);
+    let u; try { u = new URL(href, base); } catch { continue; }
+    if (u.protocol !== "https:" || /\.svg(\?|$)/i.test(u.pathname)) continue;
+    out.push({ href: u.href, score: (/apple-touch-icon/i.test(rel) ? 1000 : 0) + (size >= 64 && size <= 256 ? 500 : 0) + Math.min(size, 256) });
+  }
+  return out.sort((a, b) => b.score - a.score).map(x => x.href);
+}
+async function fetchIcon(host) {
+  const tryUrl = async (u) => {
+    try {
+      const r = await fetch(u, { signal: AbortSignal.timeout(3500), redirect: "follow", headers: { "user-agent": "CommandCenter/1.0 (own-icon lookup)" } });
+      const ct = (r.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+      if (!r.ok || !/^image\/(png|jpe?g|webp|gif|x-icon|vnd\.microsoft\.icon)$/.test(ct)) return null;
+      const buf = await r.arrayBuffer();
+      return buf.byteLength > 0 && buf.byteLength <= 150000 ? { buf, ct: ct === "image/vnd.microsoft.icon" ? "image/x-icon" : ct } : null;
+    } catch { return null; }
+  };
+  let hrefs = [];
+  try {
+    const r = await fetch(`https://${host}/`, { signal: AbortSignal.timeout(3500), redirect: "follow", headers: { "user-agent": "CommandCenter/1.0 (own-icon lookup)", accept: "text/html" } });
+    if (r.ok && /html/i.test(r.headers.get("content-type") || "")) hrefs = pickIconHref((await r.text()).slice(0, 200000), r.url);
+  } catch { /* the home page may be slow or blocked: the standard paths below still get a try */ }
+  for (const u of [...hrefs.slice(0, 3), `https://${host}/apple-touch-icon.png`, `https://${host}/favicon.ico`]) {
+    const hit = await tryUrl(u);
+    if (hit) return hit;
+  }
+  return null;
+}
+async function getLogo(env, raw) {
+  const hosts = logoHosts(raw);
+  const none = () => new Response(null, { status: 204, headers: { "cache-control": "private, max-age=86400" } });
+  if (!hosts.length) return none();
+  const key = "logo:" + hosts[hosts.length - 1];
+  const cached = await env.STATE.getWithMetadata(key, "arrayBuffer");
+  const send = (buf, ct) => new Response(buf, { headers: { "content-type": ct, "cache-control": "private, max-age=604800", "content-security-policy": "default-src 'none'; sandbox", "x-content-type-options": "nosniff" } });
+  if (cached.value && cached.metadata?.ct) return send(cached.value, cached.metadata.ct);
+  if (cached.metadata?.none) return none();
+  for (const h of hosts) {
+    const hit = await fetchIcon(h);
+    if (hit) { await env.STATE.put(key, hit.buf, { metadata: { ct: hit.ct }, expirationTtl: 30 * 86400 }); return send(hit.buf, hit.ct); }
+  }
+  await env.STATE.put(key, "", { metadata: { none: true }, expirationTtl: 86400 });
+  return none();
+}
 
 function json(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", ...headers } });
@@ -1021,4 +1088,4 @@ function pickLine(content, subtitle) {
 function escapeHtml(s) { return String(s).replace(/[&<>"]/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m])); }
 
 // named exports for tests
-export { getCanvas, shortCode, placesFromEnv, getState, postState, getCommute, spotifyNow, getCar, carCron, smartcarAuthStart, smartcarAuthCallback, substackFeeds, buildSubstackPool, onTopic };
+export { logoHosts, pickIconHref, getLogo, getCanvas, shortCode, placesFromEnv, getState, postState, getCommute, spotifyNow, getCar, carCron, smartcarAuthStart, smartcarAuthCallback, substackFeeds, buildSubstackPool, onTopic };
