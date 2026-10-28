@@ -181,25 +181,6 @@
   .kx{flex:none;width:28px;height:28px;margin-right:-6px;border-radius:50%;border:0;padding:0;display:grid;place-items:center;cursor:pointer;color:var(--dim);background:rgba(255,255,255,.08)}
   .kx:hover{color:#fff;background:rgba(255,255,255,.16)}
   .kx svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
-  /* departures board: the next thing out, in split-flap letters. It flips only when that thing changes. */
-  .dboard{padding:13px 13px 11px;border-radius:22px;background:rgba(0,0,0,.55);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
-  .dboard .bh{display:flex;justify-content:space-between;margin-bottom:9px}
-  .dboard .bh b{font:500 8.4px var(--mono);letter-spacing:.040em;text-transform:uppercase;color:var(--y)}
-  .flap{--c:var(--g);display:flex;flex-direction:column;gap:6px}
-  .flap.s-soon{--c:var(--o)} .flap.s-exam{--c:var(--y)}
-  .flap .frow{display:flex;gap:4px}
-  /* one tile (from design/cc2/kit.html): top and bottom halves; a flip folds the top half down, then the new bottom half */
-  .ft{position:relative;flex:none;width:var(--w);height:var(--h);perspective:calc(var(--h) * 5);font:600 var(--fs)/1 "Josefin Sans","Sligoil Flap",sans-serif;font-synthesis:none;color:var(--c)}
-  .ft .h{position:absolute;left:0;right:0;height:50%;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden}
-  .ft .h span{position:absolute;left:0;right:0;height:200%;display:flex;align-items:center;justify-content:center}
-  .ft .top,.ft .ftop{top:0;border-radius:var(--r) var(--r) 0 0;background:linear-gradient(#1c1c1c,#141414)}
-  .ft .bot,.ft .fbot{top:50%;border-radius:0 0 var(--r) var(--r);background:linear-gradient(#101010,#171717)}
-  .ft .top span,.ft .ftop span{top:0} .ft .bot span,.ft .fbot span{top:-100%}
-  .ft .ftop{z-index:2;transform-origin:50% 100%} .ft .fbot{z-index:2;transform-origin:50% 0;transform:rotateX(90deg)}
-  .ft::after{content:"";position:absolute;left:0;right:0;top:50%;height:1px;margin-top:-.5px;background:#000;z-index:3}
-  .dboard .bm{display:flex;justify-content:space-between;gap:10px;margin-top:9px;font-family:var(--mono);font-size:8px;letter-spacing:.020em;text-transform:uppercase;color:var(--dim)}
-  .dboard .bm b{color:var(--g);font-weight:500;white-space:nowrap}
-  .dboard .bm b.s-soon{color:var(--o)} .dboard .bm b.s-exam{color:var(--y)}
   @media (min-width:821px){ .kscreen{padding:36px 24px 24px} .kscreen.a-mail{padding-bottom:160px} }
 
   /* schedule rail: times on the left, a thin line, one pill per thing; the orange line is now. Drives sit on the rail too. */
@@ -388,6 +369,51 @@
   }
 
 
+  /* ══ DEPARTURES BOARD ══ a real split-flap board: brushed-steel frame with screws, hung from the top of the page on two steel
+     rods, a black panel with a lime column header, and rows of white flap tiles (day, time, course, assignment). It is the
+     same object in day and night. Colours: white letters; orange = due within a day; yellow = exam. */
+  .dboard{position:relative;margin-top:44px;--c:#F1EEE4}
+  .kscreen .khead,.kscreen .sync{position:relative;z-index:2}   /* the heading sits in front of the rods */
+  .dboard .drods{position:absolute;left:0;right:0;bottom:calc(100% - 14px);height:120vh;pointer-events:none;z-index:0}
+  .dboard .drods i{position:absolute;bottom:0;width:5px;height:100%;border-radius:3px;background:linear-gradient(90deg,#3b3f45,#d6dade 42%,#7b8087 60%,#4a4e54);box-shadow:1px 0 3px rgba(0,0,0,.28)}
+  .dboard .drods i:first-child{left:27%} .dboard .drods i:last-child{right:27%}
+  .dboard .drods i::after{content:"";position:absolute;left:-7px;bottom:-2px;width:19px;height:16px;border-radius:4px 4px 3px 3px;background:linear-gradient(180deg,#e3e6e9,#8f949b 55%,#5d6168);box-shadow:0 2px 3px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.7)}
+  .dboard .dframe{position:relative;z-index:1;padding:12px;border-radius:17px;background:linear-gradient(178deg,#e4e7ea 0%,#9a9fa6 16%,#d3d6da 44%,#7d828a 74%,#b4b8bd 100%);box-shadow:0 22px 44px rgba(20,16,12,.38),0 3px 6px rgba(20,16,12,.3),inset 0 1.5px 0 rgba(255,255,255,.85),inset 0 -2px 0 rgba(0,0,0,.4),inset 1.5px 0 0 rgba(255,255,255,.35),inset -1.5px 0 0 rgba(0,0,0,.25)}
+  .dboard .scr{position:absolute;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#8a8f96 55%,#3f4348);box-shadow:0 1px 1px rgba(0,0,0,.45)}
+  @media (max-width:820px){
+    .dboard{margin-top:58px}
+    .dboard .drods{height:56px}
+    .dboard .drods::before{content:"";position:absolute;left:9%;right:9%;top:-5px;height:10px;border-radius:5px;background:linear-gradient(180deg,#e2e5e8,#8a8f96 58%,#575b61);box-shadow:0 2px 4px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.7)}
+    .dboard .drods i:first-child{left:18%} .dboard .drods i:last-child{right:18%}
+  }
+  .dboard .scr.tl{left:4px;top:4px} .dboard .scr.tr{right:4px;top:4px} .dboard .scr.bl{left:4px;bottom:4px} .dboard .scr.br{right:4px;bottom:4px}
+  .dboard .dpanel{position:relative;padding:10px 12px 11px;border-radius:9px;background:linear-gradient(#0f1011,#08090a);box-shadow:inset 0 0 0 1px #000,inset 0 3px 12px rgba(0,0,0,.85),inset 0 -1px 0 rgba(255,255,255,.07);overflow:hidden}
+  .dboard .dpanel::after{content:"";position:absolute;inset:0;border-radius:9px;background:linear-gradient(112deg,rgba(255,255,255,.085),rgba(255,255,255,0) 36%,rgba(255,255,255,0) 70%,rgba(255,255,255,.03));pointer-events:none}
+  .dboard .dhead{display:flex;align-items:center;gap:8px;margin-bottom:8px;font:500 8px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:#C4D24A}
+  .dboard .dhead .dplane{width:14px;height:14px;fill:#C4D24A;flex:none}
+  .dboard .dhead #dhead-cols{display:flex;gap:var(--cg,10px);min-width:0}
+  .dboard .dhead #dhead-cols span{white-space:nowrap;overflow:hidden}
+  .dboard .dhead b{margin-left:auto;font-weight:500;color:#8E9A2F;white-space:nowrap}
+  .flap{display:flex;flex-direction:column;gap:5px}
+  .flap .frow{display:flex;align-items:center;gap:var(--cg,10px);--c:#F1EEE4}
+  .flap .frow.s-soon{--c:var(--o)} .flap .frow.s-exam{--c:#FFCD1A}
+  .flap .fcol{display:flex;gap:var(--tg,2px)}
+  .flap .lamp{width:7px;height:7px;border-radius:50%;margin-left:auto;flex:none;background:#2a2c2e;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+  .flap .frow.s-soon .lamp{background:var(--o);box-shadow:0 0 7px var(--o)} .flap .frow.s-exam .lamp{background:#FFCD1A;box-shadow:0 0 7px #FFCD1A}
+  .flap .frow.s-ok .lamp{background:#35D07F;box-shadow:0 0 6px rgba(53,208,127,.8)}
+  /* one tile: top and bottom halves; a flip folds the top half down, then the new bottom half */
+  .ft{position:relative;flex:none;width:var(--w);height:var(--h);perspective:calc(var(--h) * 5);font:600 var(--fs)/1 "Josefin Sans","Sligoil Flap",sans-serif;font-synthesis:none;color:var(--c);box-shadow:0 1px 1px rgba(0,0,0,.8)}
+  .ft .h{position:absolute;left:0;right:0;height:50%;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+  .ft .h span{position:absolute;left:0;right:0;height:200%;display:flex;align-items:center;justify-content:center}
+  .ft .top,.ft .ftop{top:0;border-radius:var(--r) var(--r) 0 0;background:linear-gradient(#2b2d2f,#1b1c1d)}
+  .ft .bot,.ft .fbot{top:50%;border-radius:0 0 var(--r) var(--r);background:linear-gradient(#141516,#202122)}
+  .ft .top span,.ft .ftop span{top:0} .ft .bot span,.ft .fbot span{top:-100%}
+  .ft .ftop{z-index:2;transform-origin:50% 100%} .ft .fbot{z-index:2;transform-origin:50% 0;transform:rotateX(90deg)}
+  .ft::after{content:"";position:absolute;left:0;right:0;top:50%;height:1.5px;margin-top:-.75px;background:#000;box-shadow:0 1px 0 rgba(255,255,255,.07);z-index:3}
+  .dboard .bm{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 10px;margin-top:9px;font-family:var(--mono);font-size:8px;letter-spacing:.03em;text-transform:uppercase;color:#9CA09A}
+  .dboard .bm > *{white-space:nowrap} .dboard .bm b{color:#6FE0A0;font-weight:500}
+  .dboard .bm b.s-soon{color:var(--o)} .dboard .bm b.s-exam{color:#FFCD1A}
+
   /* ══ NO CLIPPED TEXT ══ titles run to two lines instead of ending in "…"; detail lines wrap; the progress pill keeps its bar
      under the words (it used to float a white blob and an orange tick over the first letters) */
   .kpill .t b{white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;text-overflow:clip;line-height:1.2}
@@ -398,7 +424,6 @@
   .pp:not(.vol) .fill::after,.pp:not(.vol) .ticks{display:none}
   .pp:not(.vol) .l{max-width:none;flex:1;min-width:0;white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;text-overflow:clip;line-height:1.2;padding-right:12px}
   .pp:not(.vol) .r{flex:none;align-items:center}
-  .dboard .bm{flex-wrap:wrap;row-gap:4px} .dboard .bm > *{white-space:nowrap}
   html[data-theme="light"] .pp:not(.vol)::before{background:rgba(23,19,15,.1)}
   html[data-theme="light"] .pp:not(.vol) .fill{background:var(--o);box-shadow:none}
 
@@ -454,16 +479,7 @@
   html[data-theme="light"] .kempty,html[data-theme="light"] #hero-meta{color:rgba(23,19,15,.66)}
   html[data-theme="light"] .lead .nb-rm{color:#6c6358}
   /* the departures board stays a black board; it carries its own light-on-dark text */
-  html[data-theme="light"] .dboard{background:linear-gradient(160deg,rgba(255,255,255,.62),rgba(255,247,236,.34));
-    -webkit-backdrop-filter:blur(24px) saturate(1.7);backdrop-filter:blur(24px) saturate(1.7);
-    box-shadow:inset 0 0 0 1px rgba(255,255,255,.95),inset 0 1px 0 #fff,inset 0 -18px 30px rgba(255,170,100,.08),0 18px 44px rgba(120,70,30,.16)}
-  html[data-theme="light"] .dboard .bm{color:rgba(23,19,15,.6)}
   /* the flap tiles become frosted glass cards; letters keep their colour, deepened a touch so they read on light */
-  html[data-theme="light"] .ft{color:color-mix(in srgb,var(--c) 86%,#2a1200)}
-  html[data-theme="light"] .ft .top,html[data-theme="light"] .ft .ftop{background:linear-gradient(rgba(255,255,255,.78),rgba(255,255,255,.4))}
-  html[data-theme="light"] .ft .bot,html[data-theme="light"] .ft .fbot{background:linear-gradient(rgba(255,255,255,.3),rgba(255,236,214,.52))}
-  html[data-theme="light"] .ft::after{background:rgba(23,19,15,.2);box-shadow:0 1px 0 rgba(255,255,255,.9)}
-  html[data-theme="light"] .ft{filter:drop-shadow(0 3px 5px rgba(120,70,30,.12))}
   /* schedule rail */
   html[data-theme="light"] .ev::before{background:var(--k);box-shadow:inset 0 0 0 1.5px rgba(23,19,15,.45)}
   html[data-theme="light"] .ev.next .tm{color:var(--ink)} html[data-theme="light"] .ev.next::before{background:var(--ink)}
@@ -561,9 +577,15 @@
         <div class="khead"><h2 class="ktitle">Work</h2><span class="lbl" id="cv-badge"></span></div>
         <div class="sync" id="cv-sync"></div>
         <div class="dboard gap-m" id="dboard" hidden>
-          <div class="bh"><b>Departures</b><span class="lbl">next out</span></div>
-          <div class="flap" id="flap"></div>
-          <div class="bm"><span id="dboard-meta"></span><b id="dboard-st"></b></div>
+          <div class="drods" aria-hidden="true"><i></i><i></i></div>
+          <div class="dframe">
+            <i class="scr tl"></i><i class="scr tr"></i><i class="scr bl"></i><i class="scr br"></i>
+            <div class="dpanel">
+              <div class="dhead" aria-hidden="true"><svg viewBox="0 0 24 24" class="dplane"><path d="M3 11.5l18-7.5-6 17-3.2-6.8z"/></svg><span id="dhead-cols"></span><b>Departures</b></div>
+              <div class="flap" id="flap"></div>
+              <div class="bm"><span id="dboard-meta"></span><b id="dboard-st"></b></div>
+            </div>
+          </div>
         </div>
         <div class="kchips gap-m" id="wfilter" role="group" aria-label="Show">
           <button class="kchip" type="button" data-f="soon" aria-pressed="true">Due soon</button><button class="kchip" type="button" data-f="week" aria-pressed="false">This week</button><button class="kchip" type="button" data-f="later" aria-pressed="false">Later</button><button class="kchip" type="button" data-f="done" aria-pressed="false">Done</button>
@@ -1023,21 +1045,19 @@
       dbRef.doc("canvas/ignored").set({ids:next,updatedAt:new Date().toISOString()}).catch(function(){}); });
   })();
 
-  /* ── departures board: the next thing out, on split-flap tiles sized to fill the board (one line when the tiles can
-       stay 22px or wider, otherwise wrapped by word; long titles get smaller tiles). Letters flip only when the item
-       changes, and only once the board is on screen. ── */
-  var FLAPCH=" ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", boardSig="", boardWord="", boardPending=false, boardSeen=false, boardAvail=0, boardTimers=[];
+  /* ── departures board: the next four things due, on rows of split-flap tiles (day, time, course, assignment; a phone gets
+       day and assignment). Tiles flip only when what they show changes, and the first time the board is on screen. ── */
+  var FLAPCH=" ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789:-/.", boardSig="", boardPending=false, boardSeen=false, boardAvail=0, boardTimers=[], BOARD={rows:4,tiles:[],cfg:null,target:[],per:0};
+  var BOARD_WIDE=[{k:"day",n:3,h:"Day"},{k:"time",n:6,h:"Time"},{k:"course",n:7,h:"Course"},{k:"task",n:14,h:"Assignment"}], BOARD_NARROW=[{k:"day",n:3,h:"Day"},{k:"task",n:13,h:"Assignment"}];
+  var DAYS3=["SUN","MON","TUE","WED","THU","FRI","SAT"];
   function boardStatus(x,st){ var hl=Math.floor((x.due-Date.now())/3600000);
     return st==="exam"?"Exam":x.prog!=null&&x.pts?fmtScore(x.score)+"/"+x.pts:st==="soon"?(hl>=1?hl+"h left":"under 1h left"):"On track"; }
-  function flapWord(t){ var w=String(t).toUpperCase().replace(/[’']/g,"").replace(/[^A-Z0-9]+/g," ").trim();
-    if(w.length>40){ w=w.slice(0,40); var sp=w.lastIndexOf(" "); if(sp>20) w=w.slice(0,sp); } return w; }
-  function wrapWords(words,L){ var lim=Math.ceil(words.join(" ").length/L);
-    for(;;lim++){ var lines=[], cur=""; words.forEach(function(w){ if(!cur) cur=w; else if((cur+" "+w).length<=lim) cur+=" "+w; else { lines.push(cur); cur=w; } });
-      lines.push(cur); if(lines.length<=L) return lines; } }
-  function boardLayout(word,avail){ var words=word.split(" "), G=4, MIN=[22,16,13,11];
-    for(var L=1;L<=4;L++){ var lines=wrapWords(words,L), m=Math.max.apply(null,lines.map(function(l){ return l.length; })), w=Math.floor((avail-(m-1)*G)/m);
-      if(w>=MIN[L-1]||L===4) return {lines:lines,w:Math.max(10,Math.min(44,w))}; } }
-  function tSet(t,part,ch){ t.querySelector("."+part+" span").textContent=ch===" "?" ":ch; }
+  function cutWord(t,n){ var w=String(t).toUpperCase().replace(/[’']/g,"").replace(/[^A-Z0-9:\/.\- ]+/g," ").replace(/\s+/g," ").trim();
+    if(w.length<=n) return w; var c=w.slice(0,n), sp=c.lastIndexOf(" "); return (sp>=Math.floor(n*.55)?c.slice(0,sp):c).trim(); }
+  function dayTag(d){ var n=new Date(), a=new Date(n.getFullYear(),n.getMonth(),n.getDate()), b=new Date(d.getFullYear(),d.getMonth(),d.getDate()), diff=Math.round((b-a)/86400000);
+    return diff<=0?"TOD":diff===1?"TOM":DAYS3[d.getDay()]; }
+  function timeTag(d,allDay){ if(allDay) return "ALL"; var h=d.getHours(), m=d.getMinutes(), ap=h>=12?"P":"A"; h=h%12||12; return h+":"+(m<10?"0":"")+m+ap; }
+  function tSet(t,part,ch){ t.querySelector("."+part+" span").textContent=ch===" "?" ":ch; }
   function tShow(t,ch){ ["top","bot","ftop","fbot"].forEach(function(k){ tSet(t,k,ch); }); }
   function tFlip(t,a,b,d){ var top=t.querySelector(".ftop"), bot=t.querySelector(".fbot");
     top.getAnimations().concat(bot.getAnimations()).forEach(function(x){ x.cancel(); });
@@ -1045,40 +1065,61 @@
     top.animate([{transform:"rotateX(0deg)",filter:"brightness(1)"},{transform:"rotateX(-90deg)",filter:"brightness(.45)"}],{duration:d/2,easing:"cubic-bezier(.55,0,1,.6)",fill:"forwards"});
     bot.animate([{transform:"rotateX(90deg)",filter:"brightness(.5)"},{transform:"rotateX(0deg)",filter:"brightness(1)"}],{duration:d/2,delay:d/2,easing:"cubic-bezier(0,.4,.45,1)",fill:"forwards"});
     boardTimers.push(setTimeout(function(){ tSet(t,"bot",b); },d)); }
-  function buildTiles(){ // lays the tiles out for the current width; every tile shows its final letter
-    var flap=$("flap"); if(!flap||!boardWord) return [];
+  function buildBoard(){ // lays the rows out for the current width; the tiles start blank
+    var flap=$("flap"); if(!flap) return;
     boardTimers.forEach(clearTimeout); boardTimers=[];
-    var avail=flap.clientWidth||320, lay=boardLayout(boardWord,avail), w=lay.w; boardAvail=avail;
-    flap.style.setProperty("--w",w+"px"); flap.style.setProperty("--h",Math.round(w*1.36)+"px"); flap.style.setProperty("--fs",Math.round(w*.9)+"px"); flap.style.setProperty("--r",Math.max(2,Math.round(w*.1))+"px");
-    var tile='<div class="ft"><div class="h top"><span></span></div><div class="h bot"><span></span></div><div class="h ftop"><span></span></div><div class="h fbot"><span></span></div></div>';
-    flap.innerHTML=lay.lines.map(function(l){ return '<div class="frow" aria-hidden="true">'+l.split("").map(function(){ return tile; }).join("")+'</div>'; }).join("");
-    var tiles=[].slice.call(flap.querySelectorAll(".ft")), chars=lay.lines.join("").split("");
-    tiles.forEach(function(t,i){ t._ch=chars[i]; tShow(t,chars[i]); }); return tiles; }
+    var avail=flap.clientWidth||320; boardAvail=avail;
+    var cfg=avail>=420?BOARD_WIDE:BOARD_NARROW, chars=0; cfg.forEach(function(c){ chars+=c.n; });
+    var G=10, TG=2, LAMP=17, w=Math.max(9,Math.min(24,Math.floor((avail-LAMP-(cfg.length-1)*G-(chars-cfg.length)*TG)/chars)));
+    flap.style.setProperty("--w",w+"px"); flap.style.setProperty("--h",Math.round(w*1.5)+"px"); flap.style.setProperty("--fs",Math.round(w*.92)+"px"); flap.style.setProperty("--r",Math.max(2,Math.round(w*.12))+"px");
+    flap.style.setProperty("--cg",G+"px"); flap.style.setProperty("--tg",TG+"px"); $("dboard").style.setProperty("--cg",G+"px");
+    $("dhead-cols").innerHTML=cfg.map(function(c){ return '<span style="width:'+(c.n*w+(c.n-1)*TG)+'px">'+c.h+'</span>'; }).join("");
+    var tile='<div class="ft"><div class="h top"><span></span></div><div class="h bot"><span></span></div><div class="h ftop"><span></span></div><div class="h fbot"><span></span></div></div>', rows="";
+    for(var r=0;r<BOARD.rows;r++) rows+='<div class="frow" data-r="'+r+'">'+cfg.map(function(c){ var t=""; for(var i=0;i<c.n;i++) t+=tile; return '<div class="fcol">'+t+'</div>'; }).join("")+'<i class="lamp"></i></div>';
+    flap.innerHTML=rows; BOARD.tiles=[].slice.call(flap.querySelectorAll(".ft")); BOARD.cfg=cfg; BOARD.per=chars;
+    BOARD.tiles.forEach(function(t){ t._ch=" "; tShow(t," "); }); }
+  function boardChars(rows){ var out=[];
+    for(var r=0;r<BOARD.rows;r++){ var row=rows[r]; BOARD.cfg.forEach(function(c){ var s=row?(c.k==="task"?cutWord(row.task,c.n):row[c.k]||""):""; s=String(s).slice(0,c.n); while(s.length<c.n) s+=" "; out.push.apply(out,s.split("")); }); }
+    return out; }
+  function showTarget(){ BOARD.tiles.forEach(function(t,i){ t._ch=BOARD.target[i]||" "; tShow(t,t._ch); }); }
+  function flipFlurry(){ // first time on screen: every tile spins down to its letter, row by row
+    var STEP=74; BOARD.tiles.forEach(function(t,i){ var ch=BOARD.target[i]||" ", ti=FLAPCH.indexOf(ch), n=(ch===" "?2:6)+Math.floor(Math.random()*6), seq=[];
+      for(var k=n;k>=0;k--) seq.push(FLAPCH[(ti-k+FLAPCH.length*4)%FLAPCH.length]);
+      tShow(t,seq[0]); var base=Math.floor(i/BOARD.per)*170+(i%BOARD.per)*22;
+      seq.forEach(function(c,k){ if(!k) return; boardTimers.push(setTimeout(function(){ tFlip(t,seq[k-1],c,STEP*.92); },40+base+(k-1)*STEP)); });
+      boardTimers.push(setTimeout(function(){ t._ch=ch; },40+base+n*STEP+40)); }); }
+  function flipDiff(){ // data changed: only the tiles whose letter changed flip, through the letters in between
+    var STEP=70; BOARD.tiles.forEach(function(t,i){ var to=BOARD.target[i]||" ", from=t._ch||" "; if(from===to) return;
+      var a=FLAPCH.indexOf(from), b=FLAPCH.indexOf(to), L=FLAPCH.length, n=Math.min(12,(b-a+L)%L||L), seq=[];
+      for(var k=n;k>=0;k--) seq.push(FLAPCH[(b-k+L*4)%L]); seq[0]=from; t._ch=to;
+      var base=Math.floor(i/BOARD.per)*140+(i%BOARD.per)*18;
+      seq.forEach(function(c,k){ if(!k) return; boardTimers.push(setTimeout(function(){ tFlip(t,seq[k-1],c,STEP*.92); },40+base+(k-1)*STEP)); }); }); }
   function renderBoard(list){
     var el=$("dboard"), flap=$("flap"); if(!el) return;
-    var x=(list||deadlineList())[0]; if(!x){ el.hidden=true; boardSig=""; return; }
+    list=list||deadlineList(); if(!list.length){ el.hidden=true; boardSig=""; return; }
     el.hidden=false;
-    var st=stateOf(x), word=flapWord(x.title);
+    var x=list[0], st=stateOf(x);
     $("dboard-meta").textContent=whenShort(x.due,x.allDay)+" · "+x.course;
     var b=$("dboard-st"); b.textContent=boardStatus(x,st); b.className="s-"+st;
-    flap.className="flap s-"+st; flap.setAttribute("aria-label",x.title); flap.setAttribute("role","img");
-    if(word===boardSig) return;
-    boardSig=word; boardWord=word; buildTiles();
-    boardPending=true; flipBoard();
+    flap.setAttribute("role","img"); flap.setAttribute("aria-label","Next due: "+x.title+", "+whenShort(x.due,x.allDay));
+    if(!BOARD.tiles.length||Math.abs(flap.clientWidth-boardAvail)>2) buildBoard();
+    var rows=list.slice(0,BOARD.rows).map(function(it){ var s=stateOf(it), soon=(it.due-Date.now())<86400000;
+      return {st:s,cls:s==="exam"?"s-exam":soon?"s-soon":"s-ok",day:dayTag(it.due),time:timeTag(it.due,it.allDay),course:String(it.course||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,7),task:it.title}; });
+    [].slice.call(flap.querySelectorAll(".frow")).forEach(function(r,i){ r.className="frow"+(rows[i]?" "+rows[i].cls:""); });
+    BOARD.target=boardChars(rows);
+    var sig=BOARD.target.join("")+rows.map(function(r){ return r.cls; }).join(",");
+    if(sig===boardSig) return;
+    var first=!boardSig; boardSig=sig;
+    if(first){ showTarget(); boardPending=true; flipBoard(); } else if(REDUCED||!boardSeen) showTarget(); else flipDiff();
   }
   function flipBoard(){
     if(!boardPending||REDUCED){ boardPending=false; return; }
     if(!boardSeen) return;                                    // wait until the board is on screen
-    boardPending=false;
-    var STEP=74, tiles=buildTiles();
-    tiles.forEach(function(t,i){ var ti=FLAPCH.indexOf(t._ch), n=(t._ch===" "?3:6)+Math.floor(Math.random()*7), seq=[];
-      for(var k=n;k>=0;k--) seq.push(FLAPCH[(ti-k+FLAPCH.length*4)%FLAPCH.length]);
-      tShow(t,seq[0]);
-      seq.forEach(function(ch,k){ if(!k) return; boardTimers.push(setTimeout(function(){ tFlip(t,seq[k-1],ch,STEP*.92); },40+i*30+(k-1)*STEP)); }); });
+    boardPending=false; boardTimers.forEach(clearTimeout); boardTimers=[]; flipFlurry();
   }
   if("IntersectionObserver" in window&&$("dboard")) new IntersectionObserver(function(es){ boardSeen=es[es.length-1].isIntersecting; if(boardSeen) flipBoard(); }).observe($("dboard"));
   else boardSeen=true;
-  (function(){ var rz=0; window.addEventListener("resize",function(){ clearTimeout(rz); rz=setTimeout(function(){ var f=$("flap"); if(f&&boardWord&&Math.abs(f.clientWidth-boardAvail)>2) buildTiles(); },150); }); })();
+  (function(){ var rz=0; window.addEventListener("resize",function(){ clearTimeout(rz); rz=setTimeout(function(){ var f=$("flap"); if(f&&BOARD.tiles.length&&Math.abs(f.clientWidth-boardAvail)>2){ buildBoard(); showTarget(); } },150); }); })();
 
   /* ══════════════════════════════════════════════
      FX: the visual layer. Each piece loads on its own and fails quietly;
