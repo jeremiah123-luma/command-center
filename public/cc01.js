@@ -160,7 +160,7 @@ export function createPlayer({ canvas, loading, dots, live, chips, bridge }) {
     bx.fillStyle = "#E6E6E6"; bx.fillText("C", x0, yM); bx.fillStyle = "#FF4D00"; bx.fillText("C", x0+cw+gap, yM);
     bx.textAlign = "center"; bx.fillStyle = "rgba(20,20,22,.78)";
     bx.font = "500 38px 'Petrona', Georgia, serif"; bx.fillText("CC-01", 300, 560);
-    bx.font = "500 15px 'Marcellus', monospace"; bx.fillStyle = "rgba(20,20,22,.6)";
+    bx.font = "500 15px 'Geist Mono', monospace"; bx.fillStyle = "rgba(20,20,22,.6)";
     bx.fillText("COMMAND CENTER · 64 GB", 300, 608);
     bx.fillText("DESIGNED BY JEREMY IN NEW JERSEY", 300, 636);
   }
@@ -194,11 +194,11 @@ export function createPlayer({ canvas, loading, dots, live, chips, bridge }) {
   }
   const V = { menu:false, sel:0, vol:null, volUntil:0, noVolUntil:0 };
   function head(label, right, liked){
-    sx.textAlign = "left"; sx.textBaseline = "alphabetic"; sx.font = "500 18px 'Marcellus', monospace"; sx.fillStyle = "rgba(255,255,255,.5)";
+    sx.textAlign = "left"; sx.textBaseline = "alphabetic"; sx.font = "500 18px 'Geist Mono', monospace"; sx.fillStyle = "rgba(255,255,255,.5)";
     sx.fillText(label, 30, 44);
     if (liked){ sx.fillStyle = "#FF4D00"; const w = sx.measureText(label).width, hx = 30+w+16, hy = 38;   // a small heart after the label
       sx.beginPath(); sx.moveTo(hx, hy+6); sx.bezierCurveTo(hx-9, hy-1, hx-5, hy-9, hx, hy-4); sx.bezierCurveTo(hx+5, hy-9, hx+9, hy-1, hx, hy+6); sx.fill(); }
-    if (right){ sx.textAlign = "right"; sx.fillStyle = "rgba(255,255,255,.5)"; sx.fillText(clip(right, 250, "500 18px 'Marcellus', monospace"), 610, 44); sx.textAlign = "left"; }
+    if (right){ sx.textAlign = "right"; sx.fillStyle = "rgba(255,255,255,.5)"; sx.fillText(clip(right, 250, "500 18px 'Geist Mono', monospace"), 610, 44); sx.textAlign = "left"; }
   }
   function drawScreen(now){
     const st = bridge.state(), d = st.d;
@@ -206,20 +206,20 @@ export function createPlayer({ canvas, loading, dots, live, chips, bridge }) {
     if (st.mode === "connect"){
       head("SPOTIFY", "");
       sx.fillStyle = "#F2F2F2"; sx.font = "500 50px 'Petrona', Georgia, serif"; sx.fillText("Connect Spotify", 30, 190);
-      sx.font = "500 18px 'Marcellus', monospace"; sx.fillStyle = "rgba(255,255,255,.55)"; sx.fillText("PRESS THE CENTER BUTTON TO SIGN IN", 30, 236);
+      sx.font = "500 18px 'Geist Mono', monospace"; sx.fillStyle = "rgba(255,255,255,.55)"; sx.fillText("PRESS THE CENTER BUTTON TO SIGN IN", 30, 236);
     } else if (V.menu){
       const list = st.recent; head("LIBRARY", list.length ? (V.sel+1)+" / "+list.length : "");
       const top = Math.max(0, Math.min(V.sel - 1, list.length - 4));
       list.slice(top, top+4).forEach((t, j) => { const k = top + j, y = 70 + j*90, on = k === V.sel;
         if (on){ sx.fillStyle = "#FF4D00"; sx.fillRect(18, y, 604, 80); }
         sx.fillStyle = on ? "#000" : "#F2F2F2"; sx.fillText(clip(t.title, 540, "500 34px 'Petrona', Georgia, serif"), 34, y+38);
-        sx.fillStyle = on ? "rgba(0,0,0,.65)" : "rgba(255,255,255,.45)"; sx.fillText(clip((t.artists||"").toUpperCase()+(t.durationMs ? "  ·  "+mmss(t.durationMs/1000) : ""), 540, "500 16px 'Marcellus', monospace"), 34, y+64);
+        sx.fillStyle = on ? "rgba(0,0,0,.65)" : "rgba(255,255,255,.45)"; sx.fillText(clip((t.artists||"").toUpperCase()+(t.durationMs ? "  ·  "+mmss(t.durationMs/1000) : ""), 540, "500 16px 'Geist Mono', monospace"), 34, y+64);
         if (d && d.item && t.uri === d.item.uri){ sx.fillStyle = on ? "#000" : "#FF4D00"; sx.beginPath(); sx.arc(598, y+40, 6, 0, 7); sx.fill(); } });
-      if (!list.length){ sx.fillStyle = "rgba(255,255,255,.55)"; sx.font = "500 18px 'Marcellus', monospace"; sx.fillText("NOTHING PLAYED YET", 30, 110); }
+      if (!list.length){ sx.fillStyle = "rgba(255,255,255,.55)"; sx.font = "500 18px 'Geist Mono', monospace"; sx.fillText("NOTHING PLAYED YET", 30, 110); }
     } else if (st.mode === "empty"){
       head("SPOTIFY", st.device || "");
       sx.fillStyle = "#F2F2F2"; sx.font = "500 46px 'Petrona', Georgia, serif"; sx.fillText("Nothing playing", 30, 190);
-      sx.font = "500 18px 'Marcellus', monospace"; sx.fillStyle = "rgba(255,255,255,.55)"; sx.fillText("START A SONG IN SPOTIFY", 30, 234);
+      sx.font = "500 18px 'Geist Mono', monospace"; sx.fillStyle = "rgba(255,255,255,.55)"; sx.fillText("START A SONG IN SPOTIFY", 30, 234);
     } else {
       const it = d.item, playing = !!d.isPlaying;
       head(playing ? "NOW PLAYING" : "PAUSED", st.device ? st.device.toUpperCase() : "", st.liked);
@@ -227,25 +227,25 @@ export function createPlayer({ canvas, loading, dots, live, chips, bridge }) {
       wantArt(it.art); art(30, 74, 184);
       const lines = wrap(it.title, 370, "500 46px 'Petrona', Georgia, serif", 2);
       sx.fillStyle = "#F2F2F2"; lines.forEach((l, k) => sx.fillText(l, 238, 118 + k*50));
-      sx.font = "500 18px 'Marcellus', monospace"; sx.fillStyle = "rgba(255,255,255,.5)";
-      sx.fillText(clip((it.artists||"").toUpperCase(), 370, "500 18px 'Marcellus', monospace"), 240, 118 + lines.length*50 + 2);
+      sx.font = "500 18px 'Geist Mono', monospace"; sx.fillStyle = "rgba(255,255,255,.5)";
+      sx.fillText(clip((it.artists||"").toUpperCase(), 370, "500 18px 'Geist Mono', monospace"), 240, 118 + lines.length*50 + 2);
       if (now < V.noVolUntil){
-        sx.fillStyle = "rgba(255,255,255,.5)"; sx.font = "500 18px 'Marcellus', monospace"; sx.fillText("VOLUME", 30, 330);
+        sx.fillStyle = "rgba(255,255,255,.5)"; sx.font = "500 18px 'Geist Mono', monospace"; sx.fillText("VOLUME", 30, 330);
         sx.fillStyle = "#FF4D00"; sx.fillText("THIS DEVICE WON'T TAKE VOLUME", 30, 372);
-        sx.fillStyle = "rgba(255,255,255,.45)"; sx.fillText("USE THE BUTTONS ON "+(st.device ? clip(st.device.toUpperCase(), 250, "500 18px 'Marcellus', monospace") : "THE DEVICE"), 30, 404);
+        sx.fillStyle = "rgba(255,255,255,.45)"; sx.fillText("USE THE BUTTONS ON "+(st.device ? clip(st.device.toUpperCase(), 250, "500 18px 'Geist Mono', monospace") : "THE DEVICE"), 30, 404);
       } else if (now < V.volUntil && V.vol != null){
-        sx.fillStyle = "rgba(255,255,255,.5)"; sx.font = "500 18px 'Marcellus', monospace"; sx.fillText("VOLUME", 30, 330);
-        sx.textAlign = "right"; sx.fillStyle = "#FF4D00"; sx.font = "700 30px 'Marcellus', monospace"; sx.fillText(String(Math.round(V.vol)), 610, 332); sx.textAlign = "left";
+        sx.fillStyle = "rgba(255,255,255,.5)"; sx.font = "500 18px 'Geist Mono', monospace"; sx.fillText("VOLUME", 30, 330);
+        sx.textAlign = "right"; sx.fillStyle = "#FF4D00"; sx.font = "700 30px 'Geist Mono', monospace"; sx.fillText(String(Math.round(V.vol)), 610, 332); sx.textAlign = "left";
         const n = 24, on = Math.round(V.vol/100*n); for (let k = 0; k < n; k++){ sx.fillStyle = k < on ? "#FF4D00" : "rgba(255,255,255,.12)"; sx.fillRect(30 + k*24.2, 352, 18, 44); }
       } else {
         const dur = (it.durationMs||0)/1000, pos = Math.min(dur||0, (st.posMs||0)/1000);
         sx.fillStyle = "rgba(255,255,255,.14)"; sx.fillRect(30, 364, 580, 6);
         sx.fillStyle = "#FF4D00"; sx.fillRect(30, 364, dur ? 580*Math.min(1, pos/dur) : 0, 6);
-        sx.font = "500 19px 'Marcellus', monospace"; sx.fillStyle = "rgba(255,255,255,.7)";
+        sx.font = "500 19px 'Geist Mono', monospace"; sx.fillStyle = "rgba(255,255,255,.7)";
         sx.fillText(mmss(pos), 30, 408); if (dur){ sx.textAlign = "right"; sx.fillText("-"+mmss(Math.max(0, dur - pos)), 610, 408); sx.textAlign = "left"; }
       }
     }
-    if (st.note){ sx.fillStyle = "rgba(7,6,6,.92)"; sx.fillRect(0, 418, 640, 42); sx.fillStyle = "#FFCD1A"; sx.font = "500 17px 'Marcellus', monospace"; sx.fillText(clip(st.note.toUpperCase(), 580, "500 17px 'Marcellus', monospace"), 30, 446); }
+    if (st.note){ sx.fillStyle = "rgba(7,6,6,.92)"; sx.fillRect(0, 418, 640, 42); sx.fillStyle = "#FFCD1A"; sx.font = "500 17px 'Geist Mono', monospace"; sx.fillText(clip(st.note.toUpperCase(), 580, "500 17px 'Geist Mono', monospace"), 30, 446); }
     scTex.needsUpdate = true;
   }
 
@@ -383,7 +383,7 @@ export function createPlayer({ canvas, loading, dots, live, chips, bridge }) {
   // the loading line: . → .. → ... → . until the fonts are in and the shaders are compiled
   let dotN = 1; const dotTimer = setInterval(() => { dotN = dotN % 3 + 1; dots.textContent = ".".repeat(dotN); }, 400);
   let saved = "classic"; try { saved = localStorage.getItem("cc01.look") || "classic"; } catch(e){}
-  const ready = Promise.all(["112px Sligoil","500 46px Petrona","500 20px 'Marcellus'","700 30px 'Marcellus'"].map(f => document.fonts.load(f))).catch(()=>{}).then(() => {
+  const ready = Promise.all(["112px Sligoil","500 46px Petrona","500 20px 'Geist Mono'","700 30px 'Geist Mono'"].map(f => document.fonts.load(f))).catch(()=>{}).then(() => {
     applyFinish(saved); resize(); renderer.compile(scene, camera);
     clearInterval(dotTimer); loading.style.opacity = 0; pod.visible = true;
   });

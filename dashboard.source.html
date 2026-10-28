@@ -1,7 +1,7 @@
 <title>Command Center</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,400;0,500;1,400&family=Outfit:wght@300;400;500;600&family=Marcellus&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,400;0,500;1,400&family=Outfit:wght@300;400;500;600&family=Geist+Mono:wght@400;500;600;700&display=swap">
 <style>
   /* Sligoil (Velvetyne, SIL OFL): only the "C" glyph, for the CC mark */
   @font-face{font-family:"Sligoil";src:url(data:font/ttf;base64,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rrp+oUl9cXtvhvBeVoygAAAAAAcAWgADAAEECQAAADAAAAADAAEECQABACQAMAADAAEECQACAAgAVAADAAEECQADADgAXAADAAEECQAEACQAMAADAAEECQAFABoAlAADAAEECQAGACIArgCpADIAMAAyADUAIABBAHIAaQBlAGwAIABNAGEAcgB0AO0AbgAgAFAA6QByAGUAegBTAGwAaQBnAG8AaQBsACAATQBpAGMAcgBvACAAQgBvAGwAZABCAG8AbABkADEALgAwADAAMAA7AFUASwBXAE4AOwBTAGwAaQBnAG8AaQBsAC0ATQBpAGMAcgBvAEIAbwBsAGQAVgBlAHIAcwBpAG8AbgAgADEALgAwADAAMABTAGwAaQBnAG8AaQBsAC0ATQBpAGMAcgBvAEIAbwBsAGQAAAADAAAAAAAA/5wAMgAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAf//AA8AAQAAAAwAAAAAAAAAAQABAAEAAQABAAAACgAcAB4AAURGTFQACAAEAAAAAP//AAAAAAAAAAEAAAAKACYAKAACREZMVAAObGF0bgAYAAQAAAAA//8AAAAAAAAAAAAAAAA=) format("truetype");font-display:block}
@@ -21,7 +21,7 @@
     --serif:"Petrona","Iowan Old Style",Georgia,serif;
     --dim:rgba(255,255,255,.55); --glass:rgba(255,255,255,.09); --rim:rgba(255,255,255,.2);
     --spring:cubic-bezier(.3,1.3,.4,1); --ease:cubic-bezier(.2,.7,.2,1);
-    --mono:"Marcellus","Optima","Palatino Linotype",Georgia,serif;
+    --mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
     --gut:16px;
   }
   *{box-sizing:border-box}
@@ -386,7 +386,7 @@
     body::after{opacity:calc(var(--grain,.07) * .7)}
   }
 
-  /* ══ LIGHT ══ same identity (orange means "act", Petrona / Outfit / Marcellus, the drifting warm light, the black
+  /* ══ LIGHT ══ same identity (orange means "act", Petrona / Outfit / Geist Mono, the drifting warm light, the black
      departures board) on warm paper with frosted glass. Chosen by the toggle in the top bar, else the system setting
      (html[data-theme] is set before first paint). The now-playing sheets keep their dark look. */
   html[data-theme="light"]{
@@ -465,7 +465,7 @@
   html[data-theme="light"] .talk .opts input:checked + .sw{background:var(--ink)}
   html[data-theme="light"] .talk .opts input:checked + .sw::after{background:#fff}
   /* start-up on paper: same zoom, light ground and an ink first C */
-  html[data-theme="light"] .boot{background:var(--k)} html[data-theme="light"] .boot .mk .c1{color:#17130F}
+  html[data-theme="light"] .boot{background:var(--k)} html[data-theme="light"] .boot .mk .c1{color:#A89D8A}
 
   /* leaves (light only): pre-rendered paper-white and tan leaves, laid under the page as plain images. They only move
      with transform and opacity (no blur, no blend mode), which is what keeps the page smooth. Pick one with ?leaves=
@@ -1076,6 +1076,7 @@
     function current(){ var v=saved(); return v==="light"||v==="dark" ? v : (mq&&mq.matches ? "light" : "dark"); }
     var lastEnter=0;
     function enter(force){
+      if(CC.booting&&!force) return;
       var now=Date.now(); if(!force&&now-lastEnter<1100) return; lastEnter=now;     // a swipe fires data-s several times: play once
       var sel=".topbar-in > *,.kpill,.kchip,.ktag,.pp,.dboard,.lead,.display,.cta,.fuse,.dock .mic", n=0, last=null;
       document.querySelectorAll(sel).forEach(function(el){ var k=el.closest(".kscreen,.topbar,.dock")||el.parentNode; if(k!==last){ last=k; n=0; } el.style.setProperty("--i",Math.min(n++,10)); });
@@ -1123,14 +1124,15 @@
     var ov=$("boot"); if(!ov) return Promise.resolve();
     var seen=false; try{ seen=sessionStorage.getItem("cc.boot")==="1"; }catch(e){}
     if(seen){ ov.remove(); return Promise.resolve(); }
+    CC.booting=true;
     try{ sessionStorage.setItem("cc.boot","1"); }catch(e){}
     var mk=ov.querySelector(".mk"), c2=mk.querySelector(".c2"), E="cubic-bezier(.2,.7,.2,1)", t0=performance.now();
-    var app=[".stage",".topbar",".wrap","#dock",".fade-b"].map(function(q){ return document.querySelector(q); }).filter(Boolean);
+    var app=[".stage",".leaves",".topbar",".wrap","#dock",".fade-b"].map(function(q){ return document.querySelector(q); }).filter(Boolean);
     function wait(ms){ return new Promise(function(r){ setTimeout(r,Math.max(0,ms)); }); }
     var font=document.fonts&&document.fonts.load?document.fonts.load('20px "Sligoil"').catch(function(){}):Promise.resolve();
     var ready=CC.whenReady(4000);
     return new Promise(function(done){
-      function finish(){ ov.remove(); done(); }
+      function finish(){ ov.remove(); CC.booting=false; done(); }
       font.then(function(){
         if(REDUCED){ mk.style.opacity="1"; return Promise.all([wait(1000-(performance.now()-t0)),ready]).then(function(){
           ov.animate([{opacity:1},{opacity:0}],{duration:300,fill:"forwards"}).onfinish=finish; }); }
@@ -1139,7 +1141,8 @@
           var m=mk.getBoundingClientRect(), c=c2.getBoundingClientRect();
           mk.style.transformOrigin=((c.left-m.left)+c.width*.55)+"px "+((c.top-m.top)+c.height*.5)+"px";
           mk.animate([{transform:"translateY(-50%) scale(1)",opacity:1},{transform:"translateY(-50%) scale(18)",opacity:1,offset:.85},{transform:"translateY(-50%) scale(24)",opacity:0}],{duration:700,easing:"cubic-bezier(.6,0,.9,.4)",fill:"forwards"});
-          ov.animate([{backgroundColor:"#000"},{backgroundColor:"rgba(0,0,0,0)"}],{duration:420,delay:300,easing:"ease-in",fill:"forwards"});
+          var bc=getComputedStyle(ov).backgroundColor, bt=bc.replace(/rgba?\(([^)]+)\)/,function(m,c){ var p=c.split(",").slice(0,3).join(","); return "rgba("+p+",0)"; });
+          ov.animate([{backgroundColor:bc},{backgroundColor:bt}],{duration:420,delay:300,easing:"ease-in",fill:"forwards"});
           app.forEach(function(el){ el.animate([{transform:"scale(1.08)",opacity:0},{transform:"scale(1)",opacity:1}],{duration:600,delay:300,easing:E,fill:"backwards"}); });
           setTimeout(finish,760);
         });
