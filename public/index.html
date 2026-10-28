@@ -480,11 +480,21 @@
 
   /* Light only: things settle in out of a blur (the page just opened, or you moved to another screen), one after another,
      and a pill you can open lifts a little under the pointer. */
-  @keyframes blurin{from{opacity:0;filter:blur(12px);transform:translateY(10px) scale(.985)}to{opacity:1;filter:blur(0);transform:none}}
+  @keyframes blurin{from{opacity:0;filter:blur(9px);transform:translateY(16px) scale(.985)}to{opacity:1;filter:blur(0);transform:none}}
   html[data-theme="light"] body.enter :is(.topbar-in > *,.kpill,.kchip,.ktag,.pp,.dboard,.lead,.display,.cta,.fuse,.dock .mic){
-    animation:blurin .75s var(--ease) both;animation-delay:calc(var(--i,0) * 55ms)}
-  html[data-theme="light"] a.kpill,html[data-theme="light"] .kpill[role="button"]{transition:transform .35s var(--spring),box-shadow .3s}
-  html[data-theme="light"] a.kpill:hover{transform:translateY(-3px)}
+    animation:blurin 1.5s cubic-bezier(.22,.8,.2,1) both;animation-delay:calc(var(--i,0) * 130ms)}
+  html[data-theme="light"] a.kpill,html[data-theme="light"] .kpill[role="button"]{transition:transform .7s cubic-bezier(.22,.8,.2,1),box-shadow .6s}
+  html[data-theme="light"] a.kpill:hover{transform:translateY(-4px)}
+  html[data-theme="light"] a.kpill:active{transform:translateY(-1px) scale(.992);transition-duration:.25s}
+  /* more, and slower: the light breathes even when calm, the dock knob glides, progress fills grow in, and switching
+     theme cross-fades instead of snapping */
+  html[data-theme="light"] .stage .glow{animation:breathe-soft 11s ease-in-out infinite}
+  html[data-theme="light"] body[data-l="now"] .stage .glow{animation:breathe 7s ease-in-out infinite}
+  @keyframes breathe-soft{50%{opacity:.8;transform:scale(1.05)}}
+  html[data-theme="light"] .fuse .knob{transition:transform .95s cubic-bezier(.22,.9,.25,1.12)}
+  html[data-theme="light"] .pp .fill{transition:width 1.6s cubic-bezier(.22,.8,.2,1)}
+  html[data-theme="light"] .kchip,html[data-theme="light"] .fuse .b{transition:background-color .6s,color .6s,transform .6s cubic-bezier(.22,.8,.2,1)}
+  html.theming,html.theming *{transition:background-color .9s ease,color .9s ease,border-color .9s ease,box-shadow .9s ease,fill .9s ease,stroke .9s ease!important}
   @media (prefers-reduced-motion:reduce){html[data-theme="light"] body.enter *{animation:none!important}}
 </style>
 <style>
@@ -1079,9 +1089,10 @@
       var sel=".topbar-in > *,.kpill,.kchip,.ktag,.pp,.dboard,.lead,.display,.cta,.fuse,.dock .mic", n=0, last=null;
       document.querySelectorAll(sel).forEach(function(el){ var k=el.closest(".kscreen,.topbar,.dock")||el.parentNode; if(k!==last){ last=k; n=0; } el.style.setProperty("--i",Math.min(n++,12)); });
       document.body.classList.remove("enter"); void document.body.offsetWidth; document.body.classList.add("enter");
-      clearTimeout(enterT); enterT=setTimeout(function(){ document.body.classList.remove("enter"); },1900);
+      clearTimeout(enterT); enterT=setTimeout(function(){ document.body.classList.remove("enter"); },3600);
     }
     function apply(t,replay){
+      if(replay){ root.classList.add("theming"); clearTimeout(apply.tt); apply.tt=setTimeout(function(){ root.classList.remove("theming"); },1000); }
       root.dataset.theme=t;
       var m=document.querySelector('meta[name="theme-color"]'); if(m) m.content=t==="light" ? "#F4F0E9" : "#000000";
       var cs=document.querySelector('meta[name="color-scheme"]'); if(cs) cs.content=t;
