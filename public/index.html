@@ -391,24 +391,22 @@
      same object in day and night. Colours: white letters; orange = due within a day; yellow = exam. */
   .dboard{position:relative;margin-top:44px}
   .kscreen .khead,.kscreen .sync{position:relative;z-index:2}   /* the heading sits in front of the rods */
-  .dboard .drods{position:absolute;left:0;right:0;bottom:calc(100% - 14px);height:4000px;pointer-events:none;z-index:0}
-  .dboard .drods i{position:absolute;bottom:0;width:14px;height:100%;background:url(/board/board-rod.png) center top/14px 300px repeat-y}
+  .dboard .drods{position:absolute;left:0;right:0;bottom:calc(100% - 14px);height:200px;pointer-events:none;z-index:0}
+  .dboard .drods i{position:absolute;bottom:0;width:14px;height:100%}   /* only the clamp and turnbuckle live here; the cable itself is #cables */
+  /* the cables are drawn on a fixed layer behind the page, so no scrolling column can clip them: they always run from the very top of the window down to the board */
+  #cables{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  #cables i{position:absolute;top:0;left:0;width:14px;height:0;display:none;transform-origin:50% 0;background:url(/board/board-rod.png) center bottom/14px 300px repeat-y}
   .dboard .drods i:first-child{left:calc(27% - 7px)} .dboard .drods i:last-child{right:calc(27% - 7px)}
   .dboard .drods i::after{content:"";position:absolute;left:-15px;bottom:-14px;width:45px;height:35px;background:url(/board/board-clamp.png) center/100% 100% no-repeat}
   .dboard .drods i::before{content:"";position:absolute;left:-4px;bottom:96px;width:22px;height:85px;background:url(/board/board-turnbuckle.png) center/100% 100% no-repeat;z-index:1}
   .dboard .dframe{position:relative;z-index:1;border:34px solid transparent;border-image:url(/board/board-frame.png) 88 fill/34px/0 stretch;border-radius:28px;padding:0;background:#09090a;background-clip:padding-box}
   .dboard .dframe::after{content:"";position:absolute;inset:0;border-radius:6px;background:url(/board/board-glass.png) center/100% 100% no-repeat;pointer-events:none;z-index:3}
   .dboard .scr{display:none}
-  /* the board is lowered on its rods from the top of the page, overshoots a hair, then hangs and sways like a pendulum that settles.
-     translate + rotate are separate compositor-only properties, so the two motions layer without a wrapper or any layout work. */
-  .dboard{transform-origin:50% calc(-120vh + 14px)}
+  /* the board is lowered on its cables from the top of its column (see the IntersectionObserver below): a drop, one overshoot, then a damped sideways swing with the cables staying parallel. Driven from script so the cables follow it frame by frame. */
   .dboard.pre{visibility:hidden}
-  .dboard.hang{animation:bsway 3.8s .7s ease-in-out both;will-change:translate,rotate}
-  @keyframes bsway{0%{rotate:0deg}14%{rotate:1deg}34%{rotate:-.72deg}54%{rotate:.4deg}74%{rotate:-.18deg}100%{rotate:0deg}}
-  @media (max-width:820px){ @keyframes bsway{0%{rotate:0deg}14%{rotate:.7deg}34%{rotate:-.5deg}54%{rotate:.28deg}74%{rotate:-.12deg}100%{rotate:0deg}} }
   @media (max-width:820px){
     .dboard{margin-top:58px}
-    .dboard .drods i:first-child{left:calc(18% - 7px)} .dboard .drods i:last-child{right:calc(18% - 7px)}
+    .dboard .drods i:first-child{left:calc(28% - 7px)} .dboard .drods i:last-child{right:calc(28% - 7px)}   /* clear of 'Work', the count and the date */
     .dboard .dframe{border-width:26px;border-image-width:26px;border-radius:22px} .dboard .dframe::after{inset:0;border-radius:5px}
   }
   .dboard .dpanel{position:relative;padding:4px 6px 6px;border-radius:6px;background:linear-gradient(#0f1011,#08090a);box-shadow:inset 0 0 0 1px #000,inset 0 3px 12px rgba(0,0,0,.85),inset 0 -1px 0 rgba(255,255,255,.07),inset 0 0 52px rgba(255,170,50,.06);overflow:hidden}
@@ -1135,10 +1133,29 @@
       tShow(t,seq[0]);
       seq.forEach(function(ch,k){ if(!k) return; boardTimers.push(setTimeout(function(){ tFlip(t,seq[k-1],ch,STEP*.92); },40+i*30+(k-1)*STEP)); }); });
   }
-  if("IntersectionObserver" in window&&$("dboard")) (function(){ var bd=$("dboard"), reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion:reduce)").matches; if(!reduce) bd.classList.add("pre");
-    new IntersectionObserver(function(es){ boardSeen=es[es.length-1].isIntersecting; if(boardSeen){ if(bd.classList.contains("pre")){ var dy=-Math.max(160,Math.round(bd.getBoundingClientRect().bottom+30)); bd.classList.remove("pre"); bd.classList.add("hang");
-        if(bd.animate){ var d=bd.animate([{translate:"0 "+dy+"px",easing:"cubic-bezier(.45,0,.75,.55)"},{translate:"0 11px",offset:.58,easing:"cubic-bezier(.3,0,.4,1)"},{translate:"0 -4px",offset:.78,easing:"ease-in-out"},{translate:"0 0"}],{duration:1250,fill:"both"}); d.onfinish=function(){ d.cancel(); }; }
-        bd.addEventListener("animationend",function e(ev){ if(ev.animationName==="bsway"){ bd.classList.remove("hang"); bd.removeEventListener("animationend",e); } }); } flipBoard(); } }).observe(bd); })();
+  if("IntersectionObserver" in window&&$("dboard")) (function(){
+    var bd=$("dboard"), reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion:reduce)").matches, cab=document.createElement("div"), cs=[], curDx=0, animating=false, raf=0;
+    cab.id="cables"; cab.setAttribute("aria-hidden","true"); cab.innerHTML="<i></i><i></i>"; var stage=document.querySelector(".stage"); document.body.insertBefore(cab,stage?stage.nextSibling:document.body.firstChild);
+    cs=[].slice.call(cab.children); if(!reduce) bd.classList.add("pre");
+    /* each cable hangs from a fixed point at the top of the window to its clamp on the board; the board swings on both, so they tilt together */
+    function place(){ var stubs=bd.querySelectorAll(".drods i"), vw=window.innerWidth;
+      if(bd.hidden||bd.classList.contains("pre")||!stubs.length){ cs.forEach(function(c){ c.style.display="none"; }); return; }
+      cs.forEach(function(c,k){ var r=stubs[k].getBoundingClientRect(), yb=r.bottom-16, xs=r.left+r.width/2, x0=xs-curDx;
+        if(yb<=2||xs<-30||xs>vw+30){ c.style.display="none"; return; }
+        var len=Math.sqrt(yb*yb+curDx*curDx), ang=Math.atan2(curDx,yb);
+        c.style.display="block"; c.style.left=(x0-7)+"px"; c.style.height=len+"px"; c.style.transform="rotate("+(-ang)+"rad)"; }); }
+    function soon(){ if(!raf&&!animating) raf=requestAnimationFrame(function(){ raf=0; place(); }); }
+    document.addEventListener("scroll",soon,{capture:true,passive:true}); window.addEventListener("resize",soon);
+    if(window.ResizeObserver) new ResizeObserver(soon).observe(bd); setInterval(function(){ if(!animating&&!document.hidden) place(); },500); place();
+    function drop(){
+      var r=bd.getBoundingClientRect(), sc=bd.parentElement; while(sc&&!/(auto|scroll)/.test(getComputedStyle(sc).overflowY)) sc=sc.parentElement;
+      var clipTop=sc?sc.getBoundingClientRect().top:0, dy0=Math.min(-60,clipTop-r.top), phone=window.innerWidth<=820, A=phone?5:8, O=11, t1=Math.min(.85,.38+Math.sqrt(-dy0/900)*.5), t0=0;
+      bd.classList.remove("pre"); animating=true; bd.style.willChange="translate";
+      function frame(now){ if(!t0) t0=now; var s=(now-t0)/1000, x=0, y;
+        if(s<t1){ var p=s/t1; y=dy0+(O-dy0)*p*p; } else { var u=s-t1; y=O*Math.exp(-5*u)*Math.cos(6.2832*1.5*u); x=A*Math.exp(-u/1.5)*Math.sin(6.2832*u/1.7); if(u>4.2){ animating=false; curDx=0; bd.style.translate=""; bd.style.willChange=""; place(); return; } }
+        curDx=x; bd.style.translate=x.toFixed(2)+"px "+y.toFixed(2)+"px"; place(); requestAnimationFrame(frame); }
+      requestAnimationFrame(frame); }
+    new IntersectionObserver(function(es){ boardSeen=es[es.length-1].isIntersecting; if(boardSeen){ if(bd.classList.contains("pre")) drop(); flipBoard(); } }).observe(bd); })();
   else boardSeen=true;
   (function(){ var rz=0; window.addEventListener("resize",function(){ clearTimeout(rz); rz=setTimeout(function(){ var f=$("flap"); if(f&&boardWord&&Math.abs(f.clientWidth-boardAvail)>2) buildTiles(); },150); }); })();
 
