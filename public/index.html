@@ -61,6 +61,12 @@
   .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
   .wrap{position:relative;z-index:1;max-width:1240px;margin:0 auto;padding-inline:var(--gut);padding-block:16px 120px}
+  /* the pages scroll all the way up under the top bar (so the board's cables can reach the window's edge). The veil is a live copy
+     of the background (stage light + leaves, kept in step with the real ones) over the top 58px, fading out below it: text that
+     scrolls up disappears under it, while the board sits above it. Only where the pages start under the bar: phone and Mac. */
+  .veil{display:none;position:fixed;left:0;right:0;top:0;height:82px;z-index:1;pointer-events:none;background:var(--k);
+    -webkit-mask:linear-gradient(#000 52px,transparent 82px) no-repeat;mask:linear-gradient(#000 52px,transparent 82px) no-repeat}
+  body.mac .veil{display:block}
 
   /* ══ BOARD ══ the four screens: swipe pages on the phone, one column on a tablet, two columns on the Mac */
   .board{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));min-width:0}
@@ -78,8 +84,8 @@
     body.mac .wrap{padding-block:0}
     /* the single row is pinned to the grid's height (an "auto" row grows to fit its content in Safari, so the columns
        never scrolled and everything past the window was cut off); each column fills it and scrolls on its own */
-    .board.cols{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr);column-gap:56px;max-width:none;height:calc(100vh - 58px);height:calc(100dvh - 58px);overflow:hidden}
-    .board.cols > .col{height:100%;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;padding-bottom:160px}
+    .board.cols{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr);column-gap:56px;max-width:none;height:100vh;height:100dvh;margin-top:-58px;overflow:hidden}   /* starts at the window's top edge, under the top bar */
+    .board.cols > .col{height:100%;min-height:0;padding-top:58px;scroll-padding-top:58px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;padding-bottom:160px}
     .board.cols .kchips{-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent)}
     .board.cols > .col::-webkit-scrollbar{display:none}
     .board.cols .today{max-width:none;padding-bottom:8px}
@@ -367,14 +373,14 @@
   @media (max-width:820px){
     :root{--gut:16px;--dockb:max(10px, calc(env(safe-area-inset-bottom,0px) - 12px));padding-bottom:0}
     html,body{height:100%} body{overflow:hidden;display:flex;flex-direction:column}
-    .topbar{flex:none}
+    .topbar{position:absolute;top:0;left:0;right:0}   /* floats over the pages, which start at the window's top edge */
     .wrap{flex:1;min-height:0;min-width:0;width:100%;display:flex;flex-direction:column;padding-block:0}
     .board{flex:1;min-height:0;display:flex;border:0;margin-inline:calc(var(--gut) * -1);padding-inline:var(--gut);gap:var(--gut);scroll-padding-inline:var(--gut);overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scrollbar-width:none}
     .board::-webkit-scrollbar{display:none}
     /* a page scrolls up and down only: overflow-x hidden, so nothing inside can ever make it pan sideways (the swipe between
        pages belongs to .board). The chips rows bleed only as far as the screen's 2px side padding here; the 16px bleed is for
        the wider layouts, and on the phone it stuck 14px past the page and made iOS pan and rubber-band in both axes. */
-    .board > .page{flex:0 0 100%;width:100%;min-width:0;scroll-snap-align:start;scroll-snap-stop:always;height:100%;display:flex;flex-direction:column;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain;scrollbar-width:none;border-top:1px solid var(--line);border-left:1px solid var(--line);padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))}
+    .board > .page{flex:0 0 100%;width:100%;min-width:0;scroll-snap-align:start;scroll-snap-stop:always;height:100%;display:flex;flex-direction:column;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain;scrollbar-width:none;padding-top:58px;scroll-padding-top:58px;border-top:1px solid var(--line);border-left:1px solid var(--line);padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))}
     .board > .page::-webkit-scrollbar{display:none}
     .board > .page.p-k{border:0;padding-bottom:0}
     .board > .page > *{max-width:100%;min-width:0}
@@ -383,31 +389,32 @@
     .foot{display:none}
     .dock{bottom:var(--dockb)}
     body::after{opacity:calc(var(--grain,.07) * .7)}
+    .veil{display:block}
   }
 
 
   /* ══ DEPARTURES BOARD ══ a real split-flap board: brushed-steel frame with screws, hung from the top of the page on two steel
      rods, a black panel with a lime column header, and rows of white flap tiles (day, time, course, assignment). It is the
      same object in day and night. Colours: white letters; orange = due within a day; yellow = exam. */
-  .dboard{position:relative;margin-top:44px}
-  .kscreen .khead,.kscreen .sync{position:relative;z-index:2}   /* the heading sits in front of the rods */
-  .dboard .drods{position:absolute;left:0;right:0;bottom:calc(100% - 14px);height:200px;pointer-events:none;z-index:0}
-  .dboard .drods i{position:absolute;bottom:0;width:14px;height:100%}   /* only the clamp and turnbuckle live here; the cable itself is #cables */
-  /* the cables are drawn on a fixed layer behind the page, so no scrolling column can clip them: they always run from the very top of the window down to the board */
-  #cables{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
-    .dboard .drods i{transform-origin:50% 100%}
-  #cables i{position:absolute;top:0;left:0;width:14px;height:0;display:none;transform-origin:50% 0;background:url(/board/board-rod.png) center bottom/14px 300px repeat-y}
-  .dboard .drods i:first-child{left:calc(27% - 7px)} .dboard .drods i:last-child{right:calc(27% - 7px)}
-  .dboard .drods i::after{content:"";position:absolute;left:-15px;bottom:-14px;width:45px;height:35px;background:url(/board/board-clamp.png) center/100% 100% no-repeat}
-  .dboard .drods i::before{content:"";position:absolute;left:-4px;bottom:96px;width:22px;height:85px;background:url(/board/board-turnbuckle.png) center/100% 100% no-repeat;z-index:1}
+  .dboard{position:relative;z-index:2;margin-top:44px}   /* above the top veil, so the cables stay visible right up to the window's edge */
+  /* each hanger is one element cut from the one Blender model (design/board-blender/v3): the clamp, sleeve, rope and turnbuckle
+     render (bottom 300px) and, above it, the rope from the same render repeating up past the top of the window. It lives inside the
+     board, so it moves with every scroll, swipe and swing exactly as the board does. */
+  .dboard .drods{position:absolute;left:0;right:0;bottom:calc(100% - 5px);height:4000px;pointer-events:none;z-index:0}
+  .dboard .drods i{position:absolute;bottom:0;width:48px;height:100%}
+  .dboard .drods i::before{content:"";position:absolute;left:0;right:0;top:0;bottom:300px;background:url(/board/board-cable.png) center bottom/48px 300px repeat-y}
+  .dboard .drods i::after{content:"";position:absolute;left:0;right:0;bottom:0;height:300px;background:url(/board/board-hanger.png) center/100% 100% no-repeat}
+  .dboard .drods i:first-child{left:calc(27% - 24px)} .dboard .drods i:last-child{right:calc(27% - 24px)}
   .dboard .dframe{position:relative;z-index:1;border:34px solid transparent;border-image:url(/board/board-frame.png) 88 fill/34px/0 stretch;border-radius:28px;padding:0;background:#09090a;background-clip:padding-box}
   .dboard .dframe::after{content:"";position:absolute;inset:0;border-radius:6px;background:url(/board/board-glass.png) center/100% 100% no-repeat;pointer-events:none;z-index:3}
   .dboard .scr{display:none}
-  /* the board is lowered on its cables from the top of its column (see the IntersectionObserver below): a drop, one overshoot, then a damped sideways swing with the cables staying parallel. Driven from script so the cables follow it frame by frame. */
+  /* the first time it comes into view the board is lowered from the top of the window, overshoots once, then swings and settles
+     (the IntersectionObserver below). Board and cables are one element, so they move as one piece. */
   .dboard.pre{visibility:hidden}
+  .kscreen.dropping .khead,.kscreen.dropping .sync{position:relative;z-index:3}   /* while it comes down it passes behind the heading, never over it */
   @media (max-width:820px){
     .dboard{margin-top:58px}
-    .dboard .drods i:first-child{left:calc(28% - 7px)} .dboard .drods i:last-child{right:calc(28% - 7px)}   /* clear of 'Work', the count and the date */
+    .dboard .drods i:first-child{left:calc(28% - 24px)} .dboard .drods i:last-child{right:calc(28% - 24px)}   /* clear of 'Work', the count and the date */
     .dboard .dframe{border-width:26px;border-image-width:26px;border-radius:22px} .dboard .dframe::after{inset:0;border-radius:5px}
   }
   .dboard .dpanel{position:relative;padding:4px 6px 6px;border-radius:6px;background:linear-gradient(#0f1011,#08090a);box-shadow:inset 0 0 0 1px #000,inset 0 3px 12px rgba(0,0,0,.85),inset 0 -1px 0 rgba(255,255,255,.07),inset 0 0 52px rgba(255,170,50,.06);overflow:hidden}
@@ -463,6 +470,7 @@
   }
   html[data-theme="light"],html[data-theme="light"] body{color:var(--ink);
     background:radial-gradient(900px 620px at 4% 104%,rgba(196,170,96,.22),transparent 70%),radial-gradient(760px 560px at 100% 0%,rgba(255,176,110,.26),transparent 70%),linear-gradient(180deg,#FBF4E8,#F1E4D0) fixed}
+  html[data-theme="light"] .veil{background:radial-gradient(900px 620px at 4% 104%,rgba(196,170,96,.22),transparent 70%),radial-gradient(760px 560px at 100% 0%,rgba(255,176,110,.26),transparent 70%),linear-gradient(180deg,#FBF4E8,#F1E4D0) fixed}
   html[data-theme="light"] ::selection{background:var(--o);color:#fff}
   html[data-theme="light"] .stage .glow{background:radial-gradient(calc(340px * var(--gs)) calc(400px * var(--gs)) at 50% 50%,rgba(255,160,90,calc(var(--ga) * .85)),rgba(255,77,0,calc(var(--ga) * .45)) 34%,rgba(255,120,60,calc(var(--ga) * .18)) 60%,transparent 82%)}
   html[data-theme="light"] .stage .dots{background:radial-gradient(circle,rgba(255,77,0,.55) .75px,transparent 1.15px) 0 0/4px 4px}
@@ -584,6 +592,7 @@
 </header>
 
 <div class="wrap">
+  <div class="veil" id="veil" aria-hidden="true"></div>
   <div class="board" id="grid">
     <!-- page 0 · today: when to leave · what's due next · what's after that -->
     <div class="page p-k" data-page="overview" style="display:contents">
@@ -1135,30 +1144,24 @@
       seq.forEach(function(ch,k){ if(!k) return; boardTimers.push(setTimeout(function(){ tFlip(t,seq[k-1],ch,STEP*.92); },40+i*30+(k-1)*STEP)); }); });
   }
   if("IntersectionObserver" in window&&$("dboard")) (function(){
-    var bd=$("dboard"), reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion:reduce)").matches, cab=document.createElement("div"), cs=[], curDx=0, animating=false, raf=0;
-    cab.id="cables"; cab.setAttribute("aria-hidden","true"); cab.innerHTML="<i></i><i></i>"; var stage=document.querySelector(".stage"); document.body.insertBefore(cab,stage?stage.nextSibling:document.body.firstChild);
-    cs=[].slice.call(cab.children); if(!reduce) bd.classList.add("pre");
-    /* each cable hangs from a fixed point at the top of the window to its clamp on the board; the board swings on both, so they tilt together */
-    function place(){ var dr=bd.querySelector(".drods"), stubs=bd.querySelectorAll(".drods i"), vw=window.innerWidth;
-      if(bd.hidden||bd.classList.contains("pre")||!stubs.length){ cs.forEach(function(c){ c.style.display="none"; }); return; }
-      var db=dr.getBoundingClientRect();   /* the rods box doesn't rotate, so each clamp joint is where the board really is */
-      cs.forEach(function(c,k){ var st=stubs[k], xs=db.left+st.offsetLeft+st.offsetWidth/2, yb=db.bottom, x0=xs-curDx;
-        if(yb<=2||xs<-30||xs>vw+30){ c.style.display="none"; st.style.transform=""; return; }
-        var len=Math.sqrt(yb*yb+curDx*curDx), ang=Math.atan2(curDx,yb);
-        c.style.display="block"; c.style.left=(x0-7)+"px"; c.style.height=len+"px"; c.style.transform="rotate("+(-ang)+"rad)";
-        st.style.transform=curDx?"rotate("+(-ang)+"rad)":""; }); }   /* clamp and turnbuckle lean along the same line as the cable */
-    function soon(){ if(!raf&&!animating) raf=requestAnimationFrame(function(){ raf=0; place(); }); }
-    document.addEventListener("scroll",soon,{capture:true,passive:true}); window.addEventListener("resize",soon);
-    if(window.ResizeObserver) new ResizeObserver(soon).observe(bd); setInterval(function(){ if(!animating&&!document.hidden) place(); },500); place();
+    var bd=$("dboard"), reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion:reduce)").matches;
+    if(!reduce&&bd.animate) bd.classList.add("pre");
+    /* lowered from the top of the window with gravity, one overshoot as the cables take the weight, then it swings on them and
+       settles. The whole rig pivots about a point above the window, so cables and board stay one straight piece. The curve is
+       sampled into keyframes and handed to the compositor: nothing runs per frame on the page. */
     function drop(){
-      var r=bd.getBoundingClientRect(), sc=bd.parentElement; while(sc&&!/(auto|scroll)/.test(getComputedStyle(sc).overflowY)) sc=sc.parentElement;
-      var clipTop=sc?sc.getBoundingClientRect().top:0, dy0=Math.min(-60,clipTop-r.top), phone=window.innerWidth<=820, A=phone?5:8, O=11, t1=Math.min(.85,.38+Math.sqrt(-dy0/900)*.5), t0=0;
-      bd.classList.remove("pre"); animating=true; bd.style.willChange="translate";
-      function frame(now){ if(!t0) t0=now; var s=(now-t0)/1000, x=0, y;
-        if(s<t1){ var p=s/t1; y=dy0+(O-dy0)*p*p; } else { var u=s-t1; y=O*Math.exp(-5*u)*Math.cos(6.2832*1.5*u); x=A*Math.exp(-u/1.5)*Math.sin(6.2832*u/1.7); if(u>4.2){ animating=false; curDx=0; bd.style.translate=""; bd.style.willChange=""; place(); return; } }
-        curDx=x; bd.style.translate=x.toFixed(2)+"px "+y.toFixed(2)+"px"; place(); requestAnimationFrame(frame); }
-      requestAnimationFrame(frame); }
-    new IntersectionObserver(function(es){ boardSeen=es[es.length-1].isIntersecting; if(boardSeen){ if(bd.classList.contains("pre")) drop(); flipBoard(); } }).observe(bd); })();
+      var r=bd.getBoundingClientRect(), phone=window.innerWidth<=820, dy0=Math.min(-60,8-r.top), O=11,
+          t1=Math.min(.85,.38+Math.sqrt(-dy0/900)*.5), arm=r.top+300+r.height/2, th=(phone?5:8)/arm*57.2958, T=t1+4.2, kf=[], n=Math.round(T*40);
+      for(var k=0;k<=n;k++){ var s=T*k/n, y, a=0;
+        if(s<t1){ var p=s/t1; y=dy0+(O-dy0)*p*p; } else { var u=s-t1; y=O*Math.exp(-5*u)*Math.cos(6.2832*1.5*u); a=th*Math.exp(-u/1.5)*Math.sin(6.2832*u/1.7); }
+        kf.push({offset:k/n,transform:"translateY("+y.toFixed(2)+"px) rotate("+a.toFixed(4)+"deg)"}); }
+      kf[n].transform="none";
+      bd.style.transformOrigin="50% "+(-Math.round(r.top+300))+"px";
+      var ks=bd.closest(".kscreen"); if(ks) ks.classList.add("dropping");
+      bd.classList.remove("pre");
+      bd.animate(kf,{duration:T*1000,easing:"linear"}).onfinish=function(){ bd.style.transformOrigin=""; if(ks) ks.classList.remove("dropping"); }; }
+    new IntersectionObserver(function(es){ var e=es[es.length-1]; boardSeen=e.isIntersecting;
+      if(boardSeen){ if(bd.classList.contains("pre")&&e.intersectionRatio>=.5) drop(); if(!bd.classList.contains("pre")) flipBoard(); } },{threshold:[0,.5,1]}).observe(bd); })();
   else boardSeen=true;
   (function(){ var rz=0; window.addEventListener("resize",function(){ clearTimeout(rz); rz=setTimeout(function(){ var f=$("flap"); if(f&&boardWord&&Math.abs(f.clientWidth-boardAvail)>2) buildTiles(); },150); }); })();
 
@@ -1222,6 +1225,10 @@
       if(v==="autumn"){ var K=["oak","feather","maple"]; for(var i=0;i<9;i++){ var im=document.createElement("img"); im.className="hl"; im.alt=""; im.src="/leaves/hand-leaf-"+K[i%3]+".png"; im.style.left=((i*37)%92)+"%"; im.style.setProperty("--s",(64+(i*29)%46)+"px"); im.style.setProperty("--d",(26+(i*7)%16)+"s"); im.style.setProperty("--dl","-"+((i*11)%34)+"s"); im.style.setProperty("--r",((i*73)%360)+"deg"); host.appendChild(im); } }
       var stage=document.querySelector(".stage"); if(stage&&stage.parentNode) stage.parentNode.insertBefore(host,stage.nextSibling);
     })();
+    (function(){ var v=document.getElementById("veil"); if(!v) return;   // the top veil: copies of the background layers, animations kept in step
+      [".stage",".leaves"].forEach(function(q){ var o=document.querySelector(q); if(!o) return; var c=o.cloneNode(true); v.appendChild(c);
+        requestAnimationFrame(function(){ var a=o.getAnimations({subtree:true}), b=c.getAnimations({subtree:true});
+          for(var i=0;i<a.length&&i<b.length;i++){ try{ if(a[i].startTime!=null) b[i].startTime=a[i].startTime; }catch(e){} } }); }); })();
     apply(current(),false);
     // Entrance motion plays only when you deliberately go to another screen on the phone layout: a tap on the dock or keys 1 to 4.
     // It never plays because you scrolled (the dock highlight follows the scroll, and the columns on a wide screen just scroll).
@@ -1867,7 +1874,7 @@
     tabs.forEach(function(b){ b.addEventListener("click",function(){ var i=Number(b.getAttribute("data-page"))||0;
       if(!phone()){ var el=$(TARGETS[i]); lock=i; lockMac=true; clearTimeout(lockT);   // Mac: Today = back to the top; the others scroll to their section. The tapped circle stays lit until you scroll yourself.
         var sm=REDUCED?"auto":"smooth";
-        if(cols){ var col=i===0||i===2?cols[0]:cols[1]; col.scrollTo({top:i===0||i===1?0:Math.max(0,el.getBoundingClientRect().top-col.getBoundingClientRect().top+col.scrollTop-12),behavior:sm}); }
+        if(cols){ var col=i===0||i===2?cols[0]:cols[1]; col.scrollTo({top:i===0||i===1?0:Math.max(0,el.getBoundingClientRect().top-col.getBoundingClientRect().top+col.scrollTop-12-(parseFloat(getComputedStyle(col).paddingTop)||0)),behavior:sm}); }
         else if(i===0) window.scrollTo({top:0,behavior:sm}); else if(el) el.scrollIntoView({behavior:sm,block:"start"});
         setActive(i); return; }
       goTo(i,true); }); });
