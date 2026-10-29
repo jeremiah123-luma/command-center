@@ -374,7 +374,7 @@
      same object in day and night. Colours: white letters; orange = due within a day; yellow = exam. */
   .dboard{position:relative;margin-top:44px}
   .kscreen .khead,.kscreen .sync{position:relative;z-index:2}   /* the heading sits in front of the rods */
-  .dboard .drods{position:absolute;left:0;right:0;bottom:calc(100% - 14px);height:120vh;pointer-events:none;z-index:0}
+  .dboard .drods{position:absolute;left:0;right:0;bottom:calc(100% - 14px);height:4000px;pointer-events:none;z-index:0}
   .dboard .drods i{position:absolute;bottom:0;width:14px;height:100%;background:url(/board/board-rod.png) center top/14px 300px repeat-y}
   .dboard .drods i:first-child{left:calc(27% - 7px)} .dboard .drods i:last-child{right:calc(27% - 7px)}
   .dboard .drods i::after{content:"";position:absolute;left:-15px;bottom:-14px;width:45px;height:35px;background:url(/board/board-clamp.png) center/100% 100% no-repeat}
@@ -386,10 +386,7 @@
      translate + rotate are separate compositor-only properties, so the two motions layer without a wrapper or any layout work. */
   .dboard{transform-origin:50% calc(-120vh + 14px)}
   .dboard.pre{visibility:hidden}
-  .dboard.hang{animation:bdrop 1.25s both,bsway 3.8s .7s ease-in-out both;will-change:translate,rotate}
-  @keyframes bdrop{0%{translate:0 -78vh;animation-timing-function:cubic-bezier(.45,0,.75,.55)}
-    58%{translate:0 11px;animation-timing-function:cubic-bezier(.3,0,.4,1)}
-    78%{translate:0 -4px;animation-timing-function:ease-in-out} 100%{translate:0 0}}
+  .dboard.hang{animation:bsway 3.8s .7s ease-in-out both;will-change:translate,rotate}
   @keyframes bsway{0%{rotate:0deg}14%{rotate:1deg}34%{rotate:-.72deg}54%{rotate:.4deg}74%{rotate:-.18deg}100%{rotate:0deg}}
   @media (max-width:820px){ @keyframes bsway{0%{rotate:0deg}14%{rotate:.7deg}34%{rotate:-.5deg}54%{rotate:.28deg}74%{rotate:-.12deg}100%{rotate:0deg}} }
   @media (max-width:820px){
@@ -1107,7 +1104,9 @@
       seq.forEach(function(ch,k){ if(!k) return; boardTimers.push(setTimeout(function(){ tFlip(t,seq[k-1],ch,STEP*.92); },40+i*30+(k-1)*STEP)); }); });
   }
   if("IntersectionObserver" in window&&$("dboard")) (function(){ var bd=$("dboard"), reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion:reduce)").matches; if(!reduce) bd.classList.add("pre");
-    new IntersectionObserver(function(es){ boardSeen=es[es.length-1].isIntersecting; if(boardSeen){ if(bd.classList.contains("pre")){ bd.classList.remove("pre"); bd.classList.add("hang"); bd.addEventListener("animationend",function e(ev){ if(ev.animationName==="bsway"){ bd.classList.remove("hang"); bd.removeEventListener("animationend",e); } }); } flipBoard(); } }).observe(bd); })();
+    new IntersectionObserver(function(es){ boardSeen=es[es.length-1].isIntersecting; if(boardSeen){ if(bd.classList.contains("pre")){ var dy=-Math.max(160,Math.round(bd.getBoundingClientRect().bottom+30)); bd.classList.remove("pre"); bd.classList.add("hang");
+        if(bd.animate){ var d=bd.animate([{translate:"0 "+dy+"px",easing:"cubic-bezier(.45,0,.75,.55)"},{translate:"0 11px",offset:.58,easing:"cubic-bezier(.3,0,.4,1)"},{translate:"0 -4px",offset:.78,easing:"ease-in-out"},{translate:"0 0"}],{duration:1250,fill:"both"}); d.onfinish=function(){ d.cancel(); }; }
+        bd.addEventListener("animationend",function e(ev){ if(ev.animationName==="bsway"){ bd.classList.remove("hang"); bd.removeEventListener("animationend",e); } }); } flipBoard(); } }).observe(bd); })();
   else boardSeen=true;
   (function(){ var rz=0; window.addEventListener("resize",function(){ clearTimeout(rz); rz=setTimeout(function(){ var f=$("flap"); if(f&&boardWord&&Math.abs(f.clientWidth-boardAvail)>2) buildTiles(); },150); }); })();
 
