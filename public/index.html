@@ -395,6 +395,7 @@
   .dboard .drods i{position:absolute;bottom:0;width:14px;height:100%}   /* only the clamp and turnbuckle live here; the cable itself is #cables */
   /* the cables are drawn on a fixed layer behind the page, so no scrolling column can clip them: they always run from the very top of the window down to the board */
   #cables{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+    .dboard .drods i{transform-origin:50% 100%}
   #cables i{position:absolute;top:0;left:0;width:14px;height:0;display:none;transform-origin:50% 0;background:url(/board/board-rod.png) center bottom/14px 300px repeat-y}
   .dboard .drods i:first-child{left:calc(27% - 7px)} .dboard .drods i:last-child{right:calc(27% - 7px)}
   .dboard .drods i::after{content:"";position:absolute;left:-15px;bottom:-14px;width:45px;height:35px;background:url(/board/board-clamp.png) center/100% 100% no-repeat}
@@ -473,8 +474,8 @@
   html[data-theme="light"] .gc.logo{color:#fff;box-shadow:0 8px 24px rgba(80,52,24,.2)}
   html[data-theme="light"] .gc.art{box-shadow:inset 0 0 0 1px rgba(255,255,255,.7),0 8px 24px rgba(80,52,24,.2)}
   html[data-theme="light"] .ktag{color:var(--ink);background:rgba(255,255,255,.6);box-shadow:inset 0 0 0 1px rgba(23,19,15,.12),0 4px 14px rgba(80,52,24,.08)}
-  html[data-theme="light"] .kchip{color:var(--ink);box-shadow:inset 0 0 0 1px rgba(23,19,15,.1),inset 0 1px 0 #fff,0 4px 14px rgba(80,52,24,.08)}
-  html[data-theme="light"] a.kchip:hover{box-shadow:inset 0 0 0 1px rgba(23,19,15,.3),0 4px 14px rgba(80,52,24,.1)}
+  html[data-theme="light"] .kchip{color:var(--ink);box-shadow:inset 0 0 0 1px rgba(23,19,15,.1),inset 0 1px 0 #fff}
+  html[data-theme="light"] a.kchip:hover{box-shadow:inset 0 0 0 1px rgba(23,19,15,.3)}
   html[data-theme="light"] .kchip.quiet{box-shadow:inset 0 0 0 1px rgba(23,19,15,.14);box-shadow:inset 0 0 0 1px rgba(23,19,15,.14)}
   html[data-theme="light"] .kchip.act{color:#E04300}
   html[data-theme="light"] .kchip[aria-pressed="true"],html[data-theme="light"] .player .fin button[aria-pressed="true"]{background:var(--ink);color:#fff}
@@ -1138,12 +1139,14 @@
     cab.id="cables"; cab.setAttribute("aria-hidden","true"); cab.innerHTML="<i></i><i></i>"; var stage=document.querySelector(".stage"); document.body.insertBefore(cab,stage?stage.nextSibling:document.body.firstChild);
     cs=[].slice.call(cab.children); if(!reduce) bd.classList.add("pre");
     /* each cable hangs from a fixed point at the top of the window to its clamp on the board; the board swings on both, so they tilt together */
-    function place(){ var stubs=bd.querySelectorAll(".drods i"), vw=window.innerWidth;
+    function place(){ var dr=bd.querySelector(".drods"), stubs=bd.querySelectorAll(".drods i"), vw=window.innerWidth;
       if(bd.hidden||bd.classList.contains("pre")||!stubs.length){ cs.forEach(function(c){ c.style.display="none"; }); return; }
-      cs.forEach(function(c,k){ var r=stubs[k].getBoundingClientRect(), yb=r.bottom-16, xs=r.left+r.width/2, x0=xs-curDx;
-        if(yb<=2||xs<-30||xs>vw+30){ c.style.display="none"; return; }
+      var db=dr.getBoundingClientRect();   /* the rods box doesn't rotate, so each clamp joint is where the board really is */
+      cs.forEach(function(c,k){ var st=stubs[k], xs=db.left+st.offsetLeft+st.offsetWidth/2, yb=db.bottom, x0=xs-curDx;
+        if(yb<=2||xs<-30||xs>vw+30){ c.style.display="none"; st.style.transform=""; return; }
         var len=Math.sqrt(yb*yb+curDx*curDx), ang=Math.atan2(curDx,yb);
-        c.style.display="block"; c.style.left=(x0-7)+"px"; c.style.height=len+"px"; c.style.transform="rotate("+(-ang)+"rad)"; }); }
+        c.style.display="block"; c.style.left=(x0-7)+"px"; c.style.height=len+"px"; c.style.transform="rotate("+(-ang)+"rad)";
+        st.style.transform=curDx?"rotate("+(-ang)+"rad)":""; }); }   /* clamp and turnbuckle lean along the same line as the cable */
     function soon(){ if(!raf&&!animating) raf=requestAnimationFrame(function(){ raf=0; place(); }); }
     document.addEventListener("scroll",soon,{capture:true,passive:true}); window.addEventListener("resize",soon);
     if(window.ResizeObserver) new ResizeObserver(soon).observe(bd); setInterval(function(){ if(!animating&&!document.hidden) place(); },500); place();
