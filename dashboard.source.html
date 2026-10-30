@@ -704,6 +704,8 @@
   function $(id){return document.getElementById(id);}
   function esc(s){return (s==null?"":String(s)).replace(/[&<>"]/g,function(m){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[m];});}
   function startOfDay(d){var x=new Date(d);x.setHours(0,0,0,0);return x;}
+  // Midnight n calendar days after t. Adding 86400000 ms drifts an hour across a DST change (Nov 1, 2026 showed "Sun 1" twice).
+  function dayAfter(t,n){var x=new Date(t);x.setDate(x.getDate()+n);x.setHours(0,0,0,0);return x.getTime();}
   function ago(ms){var s=Math.floor((Date.now()-ms)/1000);if(s<60)return "just now";if(s<3600)return Math.floor(s/60)+"m ago";if(s<86400)return Math.floor(s/3600)+"h ago";return Math.floor(s/86400)+"d ago";}
   function norm(s){return (s||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();}
   function setSrc(id,state){ $(id).className="src"+(state?" "+state:""); }
@@ -807,12 +809,12 @@
   function evTitle(e){ var sm=cleanTitle(e.summary), m=sm.match(/^(.*?)\s*\(([^)]+)\)\s*$/); return m?{t:m[1],code:m[2]}:{t:sm,code:e.__course||""}; }
   function shortLoc(l){ return (l||"").replace(/Central King Building/,"CKB").replace(/, NJIT, Newark$/,"").replace(/\s*Hall\b/,"").replace(/, Room /," "); }
   function dayItems(d0){
-    var d1=d0+86400000, now=Date.now(), out=[];
+    var d1=dayAfter(d0,1), now=Date.now(), out=[];
     events.forEach(function(e){
       if(e.__type==="due"||ownedByCanvas(e.summary)) return;
       var s=+e.__start;
       if(e.__allDay){ if(startOfDay(e.__start).getTime()<=d0&&d0<startOfDay(e.__end).getTime())
-          out.push({at:d0-1,end:d0+86400000,all:true,title:cleanTitle(e.summary),meta:e.__type==="exam"?"exam":"",dot:e.__type==="exam"?"y":"n",url:e.htmlLink}); return; }
+          out.push({at:d0-1,end:d1,all:true,title:cleanTitle(e.summary),meta:e.__type==="exam"?"exam":"",dot:e.__type==="exam"?"y":"n",url:e.htmlLink}); return; }
       if(s<d0||s>=d1) return;
       var ti=evTitle(e), exam=e.__type==="exam", room=roomOf(e)||shortLoc(e.location);
       out.push({at:s,end:+e.__end,title:ti.t,meta:[ti.code,room,exam?"exam":""].filter(Boolean).join(" · "),dot:exam?"y":e.__type==="study"?"g":"",plain:!exam&&e.__type!=="study",url:e.htmlLink});
@@ -831,7 +833,7 @@
   }
   function calDays(){ // today + every day in the next two weeks with something on it
     var t0=startOfDay(new Date()).getTime(), out=[t0];
-    for(var i=1;i<14;i++){ var d=t0+i*86400000; if(dayItems(d).length) out.push(d); }
+    for(var i=1;i<14;i++){ var d=dayAfter(t0,i); if(dayItems(d).length) out.push(d); }
     return out;
   }
   function renderCal(){
