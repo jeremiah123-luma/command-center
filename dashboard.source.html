@@ -773,7 +773,7 @@
   function canvasState(strong,msg,act,retry){
     $("cv-body").innerHTML='<div class="state"><strong>'+esc(strong)+'</strong>'+esc(msg)+(act?'<div class="act">'+esc(act)+'</div>':"")
       +(retry?'<br><button class="retry" type="button" id="cv-retry">Retry link</button>':"")+'</div>';
-    $("cv-badge").textContent="offline"; setSrc("src-canvas","err");
+    $("cv-badge").textContent="offline"; setSrc("src-canvas","err"); CC.ready();   // Canvas answered with a problem: no reason to keep the logo up
     var b=$("cv-retry"); if(b&&retry) b.addEventListener("click",retry);
   }
   function canvasBoot(msg){ var el=$("cv-boot"); if(el) el.textContent=msg; }
@@ -966,7 +966,7 @@
   function renderHero(){
     var x=deadlineList()[0];
     if(!x){
-      if(canvas||calSources.primary){ heroSig=null; $("hero-tag").textContent="Next up"; $("hero-title").textContent="Nothing due. Go outside."; $("hero-meta").textContent=""; $("hero-cta").hidden=true; CC.ready(); }
+      if(canvas||calSources.primary){ heroSig=null; $("hero-tag").textContent="Next up"; $("hero-title").textContent="Nothing due. Go outside."; $("hero-meta").textContent=""; $("hero-cta").hidden=true; if(canvas) CC.ready(); }
       setLight(); return;
     }
     var sig=x.title+"|"+(+x.due)+"|"+x.url;
@@ -984,7 +984,7 @@
     if(x.pts) bits.push(x.pts+" pts");
     if(x.canvas) bits.push(x.prog>0?fmtScore(x.score)+"/"+x.pts+" done":"not submitted");
     $("hero-meta").textContent=bits.join(" · ");
-    if(canvas||calSources.primary||calSources.canvas) CC.ready();   // the built-in exam dates alone aren't "data is here"
+    if(canvas) CC.ready();   // hold the logo for Canvas: an early (often empty) calendar answer let it go before the work was in
     setLight();
   }
 
@@ -1131,7 +1131,11 @@
       bd.classList.remove("pre");
       bd.animate(kf,{duration:T*1000,easing:"linear"}).onfinish=function(){ bd.style.transformOrigin=""; if(ks) ks.classList.remove("dropping"); }; }
     new IntersectionObserver(function(es){ var e=es[es.length-1]; boardSeen=e.isIntersecting;
-      if(boardSeen){ if(bd.classList.contains("pre")&&e.intersectionRatio>=.5) drop(); if(!bd.classList.contains("pre")) flipBoard(); } },{threshold:[0,.5,1]}).observe(bd); })();
+      if(boardSeen){ if(bd.classList.contains("pre")&&e.intersectionRatio>=.5) dropWhenUp(); if(!bd.classList.contains("pre")) flipBoard(); } },{threshold:[0,.5,1]}).observe(bd);
+    // the observer fires behind the start-up overlay too; wait for it, or the drop plays half hidden and measures a scaled page
+    var dropQueued=false;
+    function dropWhenUp(){ if(!CC.booting) return drop(); if(dropQueued) return; dropQueued=true;
+      CC.startup.then(function(){ dropQueued=false; if(boardSeen&&bd.classList.contains("pre")) drop(); }); } })();
   else boardSeen=true;
   (function(){ var rz=0; window.addEventListener("resize",function(){ clearTimeout(rz); rz=setTimeout(function(){ var f=$("flap"); if(f&&boardWord&&Math.abs(f.clientWidth-boardAvail)>2) buildTiles(); },150); }); })();
 
@@ -1220,9 +1224,9 @@
     CC.booting=true;
     try{ sessionStorage.setItem("cc.boot","1"); }catch(e){}
     var mk=ov.querySelector(".mk"), c2=mk.querySelector(".c2"), E="cubic-bezier(.2,.7,.2,1)", t0=performance.now();
-    var app=[".stage",".leaves",".topbar",".wrap","#dock",".fade-b"].map(function(q){ return document.querySelector(q); }).filter(Boolean);
+    var app=[".stage",".leaves",".topbar",".board","#dock",".fade-b"].map(function(q){ return document.querySelector(q); }).filter(Boolean);
     function wait(ms){ return new Promise(function(r){ setTimeout(r,Math.max(0,ms)); }); }
-    var font=document.fonts&&document.fonts.load?document.fonts.load('20px "Sligoil"').catch(function(){}):Promise.resolve();
+    var font=Promise.race([document.fonts&&document.fonts.load?document.fonts.load('20px "Sligoil"').catch(function(){}):Promise.resolve(),wait(1500)]);
     var ready=CC.whenReady(4000);
     return new Promise(function(done){
       function finish(){ ov.remove(); CC.booting=false; done(); }
@@ -1237,6 +1241,7 @@
           var bc=getComputedStyle(ov).backgroundColor, bt=bc.replace(/rgba?\(([^)]+)\)/,function(m,c){ var p=c.split(",").slice(0,3).join(","); return "rgba("+p+",0)"; });
           ov.animate([{backgroundColor:bc},{backgroundColor:bt}],{duration:420,delay:300,easing:"ease-in",fill:"forwards"});
           app.forEach(function(el){ el.animate([{transform:"scale(1.08)",opacity:0},{transform:"scale(1)",opacity:1}],{duration:600,delay:300,easing:E,fill:"backwards"}); });
+          var veil=$("veil"); if(veil) veil.animate([{opacity:0},{opacity:1}],{duration:600,delay:300,easing:E,fill:"backwards"});
           setTimeout(finish,760);
         });
       }).catch(finish);
