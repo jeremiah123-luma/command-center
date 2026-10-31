@@ -1148,6 +1148,9 @@
   if("IntersectionObserver" in window&&$("dboard")) (function(){
     var bd=$("dboard"), reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion:reduce)").matches;
     if(!reduce&&bd.animate) bd.classList.add("pre");
+    // the board is hidden until it drops, so the browser wouldn't fetch its art until then and it fell half-drawn on a cold start
+    var art=Promise.race([Promise.all(["frame","glass","cable","hanger"].map(function(n){ var i=new Image(); i.src="/board/board-"+n+".png";
+      return (i.decode?i.decode():Promise.resolve()).catch(function(){}); })),new Promise(function(r){ setTimeout(r,2500); })]);
     /* lowered from the top of the window with gravity, one overshoot as the cables take the weight, then it swings on them and
        settles. The whole rig pivots about a point above the window, so cables and board stay one straight piece. The curve is
        sampled into keyframes and handed to the compositor: nothing runs per frame on the page. */
@@ -1166,8 +1169,8 @@
       if(boardSeen){ if(bd.classList.contains("pre")&&e.intersectionRatio>=.5) dropWhenUp(); if(!bd.classList.contains("pre")) flipBoard(); } },{threshold:[0,.5,1]}).observe(bd);
     // the observer fires behind the start-up overlay too; wait for it, or the drop plays half hidden and measures a scaled page
     var dropQueued=false;
-    function dropWhenUp(){ if(!CC.booting) return drop(); if(dropQueued) return; dropQueued=true;
-      CC.startup.then(function(){ dropQueued=false; if(boardSeen&&bd.classList.contains("pre")) drop(); }); } })();
+    function dropWhenUp(){ if(dropQueued) return; dropQueued=true;
+      Promise.all([CC.booting?CC.startup:null,art]).then(function(){ dropQueued=false; if(boardSeen&&bd.classList.contains("pre")) drop(); }); } })();
   else boardSeen=true;
   (function(){ var rz=0; window.addEventListener("resize",function(){ clearTimeout(rz); rz=setTimeout(function(){ var f=$("flap"); if(f&&boardWord&&Math.abs(f.clientWidth-boardAvail)>2) buildTiles(); },150); }); })();
 
@@ -1215,8 +1218,9 @@
     // Where that isn't available it just switches.
     function apply(t,replay){
       var reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if(replay&&document.startViewTransition&&!reduce){ document.startViewTransition(function(){ paint(t); }); return; }
-      paint(t);
+      function go(){ if(replay&&document.startViewTransition&&!reduce){ document.startViewTransition(function(){ paint(t); }); return; } paint(t); }
+      if(t==="light"&&replay&&CC.leavesArt) Promise.race([CC.leavesArt(),new Promise(function(r){ setTimeout(r,700); })]).then(go);
+      else go();
     }
     CC.setTheme=function(t){ try{ localStorage.setItem("cc.theme",t); }catch(e){} apply(t,true); };
     if(btn) btn.addEventListener("click",function(){ CC.setTheme(root.dataset.theme==="light" ? "dark" : "light"); });
@@ -1227,6 +1231,9 @@
       var q=(location.search.match(/[?&]leaves=([a-z]+)/)||[])[1], v=q; try{ if(q) localStorage.setItem("cc.leaves",q); else v=localStorage.getItem("cc.leaves"); }catch(e){}
       v=v||"fern";
       var IMG={fern:"emboss-fern-white",monstera:"emboss-monstera-white",eucalyptus:"emboss-eucalyptus-white",tan:"tone-fern-tan",sprigs:"sprigs-line-brown"};
+      var leafP=null;
+      CC.leavesArt=function(){ if(!leafP){ if(!IMG[v]) leafP=Promise.resolve(); else { var i=new Image(); i.src="/leaves/"+IMG[v]+".webp";
+        leafP=(i.decode?i.decode():Promise.resolve()).catch(function(){}); } } return leafP; };
       if(IMG[v]){ var d=document.createElement("div"); d.className="lv"; d.style.backgroundImage="url(/leaves/"+IMG[v]+".webp)"; host.appendChild(d); }
       if(v==="autumn"){ var K=["oak","feather","maple"]; for(var i=0;i<9;i++){ var im=document.createElement("img"); im.className="hl"; im.alt=""; im.src="/leaves/hand-leaf-"+K[i%3]+".png"; im.style.left=((i*37)%92)+"%"; im.style.setProperty("--s",(64+(i*29)%46)+"px"); im.style.setProperty("--d",(26+(i*7)%16)+"s"); im.style.setProperty("--dl","-"+((i*11)%34)+"s"); im.style.setProperty("--r",((i*73)%360)+"deg"); host.appendChild(im); } }
       var stage=document.querySelector(".stage"); if(stage&&stage.parentNode) stage.parentNode.insertBefore(host,stage.nextSibling);
@@ -1257,11 +1264,12 @@
     try{ sessionStorage.setItem("cc.boot","1"); }catch(e){}
     var mk=ov.querySelector(".mk"), c2=mk.querySelector(".c2"), E="cubic-bezier(.2,.7,.2,1)", t0=performance.now();
     var app=[".stage",".leaves",".topbar",".board","#dock",".fade-b"].map(function(q){ return document.querySelector(q); }).filter(Boolean);
+    app.forEach(function(el){ el.style.willChange="transform,opacity"; });
     function wait(ms){ return new Promise(function(r){ setTimeout(r,Math.max(0,ms)); }); }
     var font=Promise.race([document.fonts&&document.fonts.load?document.fonts.load('20px "Sligoil"').catch(function(){}):Promise.resolve(),wait(1500)]);
     var ready=CC.whenReady(4000);
     return new Promise(function(done){
-      function finish(){ ov.remove(); CC.booting=false; done(); }
+      function finish(){ ov.remove(); CC.booting=false; app.forEach(function(el){ el.style.willChange=""; }); done(); }   // the running fade keeps its layers until it ends
       font.then(function(){
         if(REDUCED){ mk.style.opacity="1"; return Promise.all([wait(1000-(performance.now()-t0)),ready]).then(function(){
           ov.animate([{opacity:1},{opacity:0}],{duration:300,fill:"forwards"}).onfinish=finish; }); }
@@ -1280,6 +1288,7 @@
     });
   }
   CC.startup=runStartup();
+  CC.startup.then(function(){ setTimeout(function(){ if(CC.leavesArt) CC.leavesArt(); },1500); });   // ready for the first switch to light
 
   // the soft white "goo" that joins fused circles; offsets (not screen rects) so the start-up's scale can't skew it
   CC.blob=function(fuse){ if(!fuse) return; var row=fuse.querySelector(".row"), btns=[].slice.call(row.querySelectorAll(".b")), old=fuse.querySelector("svg.blob"); if(old) old.remove();
