@@ -61,6 +61,8 @@ export default {
 
       if (path === "/api/canvas") return json(await getCanvas(env, url.searchParams.get("refresh") === "1"));
       if (path === "/api/calendar") return json(await getCalendar(env));
+      // GET = preview what the deadline sync would add; POST = run it now (the cron also runs it every 30 min)
+      if (path === "/api/calendar/sync") return json(await syncDeadlinesToCalendar(env, { dryRun: request.method !== "POST" }));
       if (path === "/api/gmail") return json(await getGmail(env));
       // Home coordinates (HOME_LATLON) and the exam schedule (EXAMS_JSON) live in secrets, never in the code.
       if (path === "/api/logo") return getLogo(env, url.searchParams.get("d"));
@@ -84,7 +86,9 @@ export default {
   // Cron (see wrangler.toml [triggers]): warm the Canvas cache so the app opens instantly, and read the car's battery
   // at its scheduled times (morning before the leave time, midday, evening, late night).
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(getCanvas(env, true).then(r => { if (r.ok) console.log(`canvas warm ok: ${r.items.length} items`); else console.error(`canvas warm failed: ${r.error}`); }).catch(() => {}));
+    ctx.waitUntil(getCanvas(env, true).then(r => { if (r.ok) console.log(`canvas warm ok: ${r.items.length} items`); else console.error(`canvas warm failed: ${r.error}`); }).catch(() => {})
+      .then(() => syncDeadlinesToCalendar(env)).then(r => { if (r.added?.length || r.moved?.length) console.log(`calendar sync: +${r.added.length} moved ${r.moved.length}`); })
+      .catch(e => console.error(`calendar sync: ${e.message || e}`)));
     ctx.waitUntil(carCron(env).catch(e => console.error(`car cron: ${e.message || e}`)));
   },
 };
@@ -254,7 +258,7 @@ function loginPage(msg = "", status = 200) {
 
 /* ───────────────────────── Google OAuth + APIs ───────────────────────── */
 
-const GOOGLE_SCOPES = ["https://www.googleapis.com/auth/calendar.readonly", "https://www.googleapis.com/auth/gmail.readonly"].join(" ");
+const GOOGLE_SCOPES = ["https://www.googleapis.com/auth/calendar.readonly", "https://www.googleapis.com/auth/calendar.events","https://www.googleapis.com/auth/gmail.readonly"].join(" ");
 
 function googleAuthStart(url, env) {
   if (!env.GOOGLE_CLIENT_ID) return html("<p>GOOGLE_CLIENT_ID secret is not set yet.</p>", 500);
@@ -317,12 +321,63 @@ async function getCalendar(env) {
     for (const c of cals) {
       const q = new URLSearchParams({ timeMin: start.toISOString(), timeMax: end.toISOString(), singleEvents: "true", orderBy: "startTime", maxResults: "80", timeZone: env.TIMEZONE });
       const ev = await gfetch(env, `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(c.id)}/events?${q}`);
-      for (const e of ev.items || []) out.push({ id: e.id, summary: e.summary, description: e.description, location: e.location, start: e.start, end: e.end, htmlLink: e.htmlLink, status: e.status, src: c.primary ? "primary" : "canvas" });
+      for (const e of ev.items || []) if (!e.extendedProperties?.private?.ccCanvas) out.push({ id: e.id, summary: e.summary, description: e.description, location: e.location, start: e.start, end: e.end, htmlLink: e.htmlLink, status: e.status, src: c.primary ? "primary" : "canvas" });
     }
     return { ok: true, events: out, fetchedAt: new Date().toISOString() };
   } catch (e) {
     return { ok: false, error: String(e.message || e), events: [] };
   }
+}
+
+/* Deadline sync: every open Canvas item due in the next CAL_SYNC_DAYS days (default 7) gets a 30-minute
+   "📌 DUE <time>: <course> — <title>" event on the primary calendar, ending at the due time, with reminders 1 and 2 days
+   before. Events it makes carry a private ccCanvas property, so it never adds one twice, moves them when a due date
+   moves, and the Schedule rail skips them (they're already on the Work board). It also skips items dismissed in the
+   app and items that already have a hand-made event that day with mostly the same words in the title.
+   Needs the calendar.events scope: after deploying, press Connect Google once more. */
+const CC_CAL = "https://www.googleapis.com/calendar/v3/calendars/primary/events";
+function dueWords(s) { return String(s || "").toLowerCase().replace(/[^a-z0-9 ]+/g, " ").split(/\s+/).filter(w => w.length > 2); }
+function sameDeadline(item, ev, tz) {
+  const day = (d) => d && new Date(d).toLocaleDateString("en-CA", { timeZone: tz });
+  if (day(item.dueAt) !== day(ev.end?.dateTime || ev.start?.date)) return false;
+  const want = dueWords(item.title), have = new Set(dueWords(ev.summary));
+  return want.length > 0 && want.filter(w => have.has(w)).length / want.length >= 0.7;
+}
+async function syncDeadlinesToCalendar(env, { dryRun = false } = {}) {
+  const tz = env.TIMEZONE || "America/New_York", days = Number(env.CAL_SYNC_DAYS || 7);
+  const snap = await env.STATE.get("canvas:snapshot", "json");
+  if (!snap?.items) return { ok: false, error: "no_canvas_snapshot" };
+  const ignored = new Set((await env.STATE.get("state:ignored", "json")) || []);
+  const now = Date.now(), until = now + days * 86400e3;
+  const due = snap.items.filter(x => x.dueAt && !x.submitted && !x.excused && !ignored.has(x.id) && Date.parse(x.dueAt) > now && Date.parse(x.dueAt) <= until);
+  const q = new URLSearchParams({ timeMin: new Date(now).toISOString(), timeMax: new Date(until + 86400e3).toISOString(), singleEvents: "true", maxResults: "250" });
+  const existing = (await gfetch(env, `${CC_CAL}?${q}`)).items || [];
+  const ours = new Map(existing.filter(e => e.extendedProperties?.private?.ccCanvas).map(e => [e.extendedProperties.private.ccCanvas, e]));
+  const token = await googleAccessToken(env);
+  const send = async (method, url, body) => {
+    const r = await fetch(url, { method, headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify(body) });
+    if (!r.ok) throw new Error(r.status === 403 ? "calendar_write_not_allowed: reconnect Google to grant calendar.events" : `google_api_${r.status}`);
+  };
+  const added = [], moved = [], skipped = [];
+  for (const it of due) {
+    const end = new Date(it.dueAt), start = new Date(end.getTime() - 30 * 60e3);
+    const time = end.toLocaleTimeString("en-US", { timeZone: tz, hour: "numeric", minute: "2-digit" });
+    const when = { start: { dateTime: start.toISOString(), timeZone: tz }, end: { dateTime: end.toISOString(), timeZone: tz } };
+    const mine = ours.get(it.id);
+    if (mine) {
+      if (Date.parse(mine.end?.dateTime) !== end.getTime()) { if (!dryRun) await send("PATCH", `${CC_CAL}/${mine.id}`, when); moved.push(it.title); }
+      continue;
+    }
+    if (existing.some(e => sameDeadline(it, e, tz))) { skipped.push(it.title); continue; }
+    if (!dryRun) await send("POST", CC_CAL, {
+      summary: `📌 DUE ${time}: ${it.course} — ${it.title}`, ...when,
+      description: `From Command Center (Canvas).${it.points ? ` ${it.points} pts.` : ""}\n${it.url || ""}`,
+      reminders: { useDefault: false, overrides: [{ method: "popup", minutes: 1440 }, { method: "popup", minutes: 2880 }] },
+      extendedProperties: { private: { ccCanvas: it.id } },
+    });
+    added.push(it.title);
+  }
+  return { ok: true, dryRun, added, moved, alreadyOnCalendar: skipped };
 }
 
 async function getGmail(env) {
