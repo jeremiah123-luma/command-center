@@ -61,6 +61,10 @@ export default {
 
       if (path === "/api/canvas") return json(await getCanvas(env, url.searchParams.get("refresh") === "1"));
       if (path === "/api/calendar") return json(await getCalendar(env));
+      if (path === "/api/push/key") { try { return json({ ok: true, key: vapidPublicKey(env) }); } catch (e) { return json({ ok: false, error: String(e.message || e) }); } }
+      if (path === "/api/push/subscribe" && request.method === "POST") return pushSubscribe(request, env);
+      if (path === "/api/push/unsubscribe" && request.method === "POST") return pushUnsubscribe(request, env);
+      if (path === "/api/push/test" && request.method === "POST") return json(await pushAll(env, { title: "Command Center", body: "Test notification.", url: "/", tag: "cc-test" }));
       // GET = preview what the deadline sync would add; POST = run it now (the cron also runs it every 30 min)
       if (path === "/api/calendar/sync") return json(await syncDeadlinesToCalendar(env, { dryRun: request.method !== "POST" }));
       if (path === "/api/gmail") return json(await getGmail(env));
@@ -88,7 +92,8 @@ export default {
   async scheduled(event, env, ctx) {
     ctx.waitUntil(getCanvas(env, true).then(r => { if (r.ok) console.log(`canvas warm ok: ${r.items.length} items`); else console.error(`canvas warm failed: ${r.error}`); }).catch(() => {})
       .then(() => syncDeadlinesToCalendar(env)).then(r => { if (r.added?.length || r.moved?.length) console.log(`calendar sync: +${r.added.length} moved ${r.moved.length}`); })
-      .catch(e => console.error(`calendar sync: ${e.message || e}`)));
+      .catch(e => console.error(`calendar sync: ${e.message || e}`))
+      .then(() => pushCron(env)).catch(e => console.error(`push cron: ${e.message || e}`)));
     ctx.waitUntil(carCron(env).catch(e => console.error(`car cron: ${e.message || e}`)));
   },
 };
@@ -960,8 +965,142 @@ async function carCron(env) {
     if (await env.STATE.get(k)) continue;
     await env.STATE.put(k, "1", { expirationTtl: 2 * 86400 });
     const r = await getCar(env, { scheduled: true });
+    if (name === "evening") await carPush(env, r).catch(e => console.error(`car push: ${e.message || e}`));
     console.log(`car ${name}: ${r.percent ?? "-"}% ${r.rangeMi ?? "-"} mi${r.held ? " (held: " + r.held + ")" : ""}${r.error ? " (" + r.error + ")" : ""}`);
   }
+}
+
+/* ───────────────────────── push notifications ─────────────────────────
+   Standard Web Push (RFC 8291 payload encryption + RFC 8292 VAPID), done with WebCrypto: no library, no third-party
+   relay. Apple, Google and Mozilla run the push services; they're free. Each device that taps "Turn on notifications"
+   is stored in KV push:subs; a 404/410 from its push service removes it. Secret: VAPID_PRIVATE_JWK (an ES256 private
+   key as JWK; the public key is derived from it). Optional var: VAPID_SUBJECT (mailto: or https:), PUSH_DAILY_CAP.
+   What gets sent (pushCron, from the 30-minute cron; each once, keyed in KV push:sent:*):
+   - leave-by: on class days, the tick 15–45 min before the leave time for the first NJIT class
+   - due soon: each open Canvas item once inside 24 h and once inside 3 h
+   - car: "Charge tonight" after the evening reading (carCron) when it's under CAR_MIN_PERCENT before a class day */
+const b64u = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const unb64u = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4)), c => c.charCodeAt(0));
+const cat = (...a) => { const o = new Uint8Array(a.reduce((n, x) => n + x.length, 0)); let i = 0; for (const x of a) { o.set(x, i); i += x.length; } return o; };
+const utf8 = (s) => new TextEncoder().encode(s);
+function vapidJwk(env) {
+  if (!env.VAPID_PRIVATE_JWK) throw new Error("push_not_configured");
+  return JSON.parse(env.VAPID_PRIVATE_JWK);
+}
+function vapidPublicKey(env) { const j = vapidJwk(env); return b64u(cat(new Uint8Array([4]), unb64u(j.x), unb64u(j.y))); }
+async function hkdf(salt, ikm, info, bytes) {
+  const k = await crypto.subtle.importKey("raw", ikm, "HKDF", false, ["deriveBits"]);
+  return new Uint8Array(await crypto.subtle.deriveBits({ name: "HKDF", hash: "SHA-256", salt, info }, k, bytes * 8));
+}
+async function encryptPush(sub, payload) {
+  const uaPub = unb64u(sub.keys.p256dh), auth = unb64u(sub.keys.auth);
+  const eph = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"]);
+  const asPub = new Uint8Array(await crypto.subtle.exportKey("raw", eph.publicKey));
+  const uaKey = await crypto.subtle.importKey("raw", uaPub, { name: "ECDH", namedCurve: "P-256" }, false, []);
+  const shared = new Uint8Array(await crypto.subtle.deriveBits({ name: "ECDH", public: uaKey }, eph.privateKey, 256));
+  const ikm = await hkdf(auth, shared, cat(utf8("WebPush: info\0"), uaPub, asPub), 32);
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const cek = await hkdf(salt, ikm, utf8("Content-Encoding: aes128gcm\0"), 16);
+  const nonce = await hkdf(salt, ikm, utf8("Content-Encoding: nonce\0"), 12);
+  const key = await crypto.subtle.importKey("raw", cek, "AES-GCM", false, ["encrypt"]);
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv: nonce }, key, cat(utf8(payload), new Uint8Array([2]))));
+  return cat(salt, new Uint8Array([0, 0, 16, 0]), new Uint8Array([asPub.length]), asPub, ct);   // header: salt | rs=4096 | idlen | keyid
+}
+async function vapidAuth(env, endpoint) {
+  const j = vapidJwk(env);
+  const key = await crypto.subtle.importKey("jwk", { kty: "EC", crv: "P-256", x: j.x, y: j.y, d: j.d }, { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"]);
+  const head = b64u(utf8(JSON.stringify({ typ: "JWT", alg: "ES256" })));
+  const claims = b64u(utf8(JSON.stringify({ aud: new URL(endpoint).origin, exp: Math.floor(Date.now() / 1000) + 12 * 3600, sub: env.VAPID_SUBJECT || "https://command-center.app" })));
+  const sig = await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, key, utf8(`${head}.${claims}`));
+  return `vapid t=${head}.${claims}.${b64u(sig)}, k=${vapidPublicKey(env)}`;
+}
+async function pushTo(env, sub, msg) {
+  const r = await fetch(sub.endpoint, {
+    method: "POST", body: await encryptPush(sub, JSON.stringify(msg)),
+    headers: { authorization: await vapidAuth(env, sub.endpoint), "content-encoding": "aes128gcm", "content-type": "application/octet-stream", ttl: String(msg.ttl || 3600), urgency: msg.urgency || "normal" },
+  });
+  return r.status;
+}
+// send to every device; once per `once` key (if given); stops at PUSH_DAILY_CAP a day so a bug can't spam
+async function pushAll(env, msg, once) {
+  if (once && await env.STATE.get(`push:sent:${once}`)) return { skipped: "already_sent" };
+  const day = etNow(new Date(), env.TIMEZONE).day, ck = `push:count:${day}`, n = Number(await env.STATE.get(ck)) || 0;
+  if (n >= Number(env.PUSH_DAILY_CAP || 12)) return { skipped: "daily_cap" };
+  const subs = (await env.STATE.get("push:subs", "json")) || [];
+  if (!subs.length) return { skipped: "no_devices" };
+  const results = [], keep = [];
+  for (const s of subs) {
+    let st; try { st = await pushTo(env, s, msg); } catch (e) { st = String(e.message || e); }
+    results.push({ device: s.device, status: st });
+    if (st !== 404 && st !== 410) keep.push(s);
+  }
+  if (keep.length !== subs.length) await env.STATE.put("push:subs", JSON.stringify(keep));
+  await env.STATE.put(ck, String(n + 1), { expirationTtl: 2 * 86400 });
+  if (once) await env.STATE.put(`push:sent:${once}`, "1", { expirationTtl: 3 * 86400 });
+  return { results };
+}
+async function pushSubscribe(request, env) {
+  const { sub, device } = await request.json().catch(() => ({}));
+  if (!sub?.endpoint || !sub?.keys?.p256dh || !sub?.keys?.auth || !/^https:\/\//.test(sub.endpoint)) return json({ ok: false, error: "bad_subscription" }, 400);
+  const subs = ((await env.STATE.get("push:subs", "json")) || []).filter(s => s.endpoint !== sub.endpoint);
+  const me = { endpoint: sub.endpoint, keys: { p256dh: sub.keys.p256dh, auth: sub.keys.auth }, device: String(device || "Browser").slice(0, 20), addedAt: new Date().toISOString() };
+  subs.push(me);
+  await env.STATE.put("push:subs", JSON.stringify(subs.slice(-10)));
+  const st = await pushTo(env, me, { title: "Notifications are on", body: `${me.device}: leave-by times, deadlines and the car will show up here.`, tag: "cc-hello" }).catch(e => String(e.message || e));
+  return json({ ok: st === 201 || st === 200, status: st, devices: subs.length, error: st === 201 || st === 200 ? undefined : `push_service_${st}` });
+}
+async function pushUnsubscribe(request, env) {
+  const { endpoint } = await request.json().catch(() => ({}));
+  const subs = ((await env.STATE.get("push:subs", "json")) || []).filter(s => s.endpoint !== endpoint);
+  await env.STATE.put("push:subs", JSON.stringify(subs));
+  return json({ ok: true, devices: subs.length });
+}
+const fmtTime = (d, tz) => new Date(d).toLocaleTimeString("en-US", { timeZone: tz, hour: "numeric", minute: "2-digit" });
+function courseName(summary) {   // "Physics I (Physics 111)" → "Physics I"; long names → the code, as on Today
+  const m = /^(.*?)\s*\(([^)]+)\)\s*$/.exec(summary || "");
+  return m ? (m[1].length <= 13 ? m[1] : m[2]) : (summary || "class");
+}
+const isCampus = (e) => e.start?.dateTime && e.status !== "cancelled" && /NJIT/i.test(e.location || "") && !/zoom|virtual|online/i.test(e.location || "");
+const NO_CLASS = /no classes|wellness day|university closed|recess|holiday/i;
+async function pushCron(env) {
+  if (!env.VAPID_PRIVATE_JWK || !(await env.STATE.get("push:subs"))) return;
+  const tz = env.TIMEZONE || "America/New_York", now = Date.now(), t = etNow(new Date(), tz);
+  // due soon
+  const snap = await env.STATE.get("canvas:snapshot", "json"), ignored = new Set((await env.STATE.get("state:ignored", "json")) || []);
+  for (const x of snap?.items || []) {
+    const open = (!x.submitted || (x.progressive && x.score != null && x.points && x.score < x.points)) && !x.excused && !ignored.has(x.id);
+    if (!open || !x.dueAt || (x.type === "discussion_topic" && x.points == null)) continue;
+    const left = Date.parse(x.dueAt) - now;
+    if (left <= 0 || left > 24 * 3600e3) continue;
+    const soon = left <= 3 * 3600e3, day = etNow(new Date(x.dueAt), tz).day !== t.day ? "tomorrow" : left <= 12 * 3600e3 && etNow(new Date(x.dueAt), tz).min >= 17 * 60 ? "tonight" : "today";
+    const when = soon ? `in ${Math.max(1, Math.round(left / 3600e3))}h` : `${fmtTime(x.dueAt, tz)} ${day}`;
+    const prog = x.progressive && x.score != null ? ` · ${x.score}/${x.points} so far` : "";
+    await pushAll(env, { title: `${x.course}: due ${when}`, body: `${x.title}${prog}`, url: x.url, tag: `due-${x.id}`, urgency: soon ? "high" : "normal" }, `due:${x.id}:${soon ? "3h" : "24h"}`);
+  }
+  // leave-by for today's first campus class
+  if (await env.STATE.get(`push:sent:leave:${t.day}`)) return;
+  const cal = await getCalendar(env);
+  const today = (cal.events || []).filter(e => etNow(new Date(e.start?.dateTime || `${e.start?.date}T12:00:00Z`), tz).day === t.day);
+  if (today.some(e => e.start?.date && NO_CLASS.test(e.summary || ""))) return;
+  const first = today.filter(isCampus).sort((a, b) => Date.parse(a.start.dateTime) - Date.parse(b.start.dateTime))[0];
+  if (!first) return;
+  const start = Date.parse(first.start.dateTime), guess = start - 55 * 60e3;
+  if (now < guess - 90 * 60e3 || now > start) return;   // only look up traffic close to the time
+  const c = await getCommute(env, new URL(`https://x/?arrive=${new Date(start).toISOString()}`)).catch(() => ({}));
+  const drive = c.ok && c.durationMin ? c.durationMin : 45, leave = start - (drive + 10) * 60e3;
+  if (now < leave - 45 * 60e3 || now >= leave - 15 * 60e3) return;
+  const room = (/^([^,]+?)\s*(?:Hall)?,\s*Room\s*(\w+)/i.exec(first.location || "") || []).slice(1).join(" ");
+  const traffic = c.ok ? ` · ${drive} min with traffic${c.ratio >= 1.3 ? ", heavy" : ""}` : "";
+  await pushAll(env, { title: `Leave by ${fmtTime(leave, tz)}`, body: `${courseName(first.summary)} at ${fmtTime(start, tz)}${room ? " in " + room : ""}${traffic}`, url: "/", tag: "leave", urgency: "high" }, `leave:${t.day}`);
+}
+async function carPush(env, r) {   // called after the evening car reading
+  const min = Number(env.CAR_MIN_PERCENT || 60);
+  if (!env.VAPID_PRIVATE_JWK || r.percent == null || r.percent >= min || r.charging) return;
+  const tz = env.TIMEZONE || "America/New_York", tomorrow = etNow(new Date(Date.now() + 86400e3), tz).day;
+  const cal = await getCalendar(env);
+  const ev = (cal.events || []).filter(e => etNow(new Date(e.start?.dateTime || `${e.start?.date}T12:00:00Z`), tz).day === tomorrow);
+  if (ev.some(e => e.start?.date && NO_CLASS.test(e.summary || "")) || !ev.some(isCampus)) return;
+  await pushAll(env, { title: "Charge tonight", body: `i4 at ${r.percent}%${r.rangeMi ? ` · ${r.rangeMi} mi` : ""}. Class tomorrow, aim for ${min}%+.`, url: "/", tag: "car" }, `car:${tomorrow}`);
 }
 
 /* ───────────────────────── quote: a Bible verse or a line from a Substack post ─────────────────────────

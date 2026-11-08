@@ -569,7 +569,8 @@
   html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
   body{margin:0} img{max-width:100%} [hidden]{display:none!important}
   a.retry{text-decoration:none}
-  .lock-form{margin-top:40px}
+  .lock-form{margin-top:40px;display:flex;gap:20px;flex-wrap:wrap}
+  #push-btn[data-on="1"]{color:var(--g)}
   .logout{background:none;border:0;padding:0;cursor:pointer;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
   .logout:hover{color:var(--o)}
 </style>
@@ -610,7 +611,7 @@
           <blockquote id="q-text"></blockquote>
           <figcaption class="lbl"><a id="q-src" target="_blank" rel="noopener"></a></figcaption>
         </figure>
-        <form method="post" action="/logout" class="lock-form"><button type="submit" class="logout">Lock</button></form>
+        <form method="post" action="/logout" class="lock-form"><button type="button" id="push-btn" class="logout" hidden></button><button type="submit" class="logout">Lock</button></form>
       </section>
     </div>
 
@@ -1764,6 +1765,35 @@
   document.addEventListener("visibilitychange",function(){ if(document.visibilityState==="visible") refreshAll(); });
   if(location.search.indexOf("connected=google")>-1) history.replaceState(null,"",location.pathname);
   if("serviceWorker" in navigator){ navigator.serviceWorker.register("/sw.js").catch(function(){}); }
+
+  /* Push notifications (Web Push, no third-party service): the Notifications button under Today subscribes this
+     device; the Worker's cron sends leave-by, due-soon and car alerts to every subscribed device. iOS only allows
+     it from the home-screen app, and only after a tap. */
+  (function(){
+    var btn=$("push-btn"); if(!btn) return;
+    var ok="serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+    if(!ok){ return; }   // e.g. iPhone Safari tab (not the home-screen app): nothing to offer
+    function b64(s){ s=s.replace(/-/g,"+").replace(/_/g,"/"); var raw=atob(s+"===".slice((s.length+3)%4)); var a=new Uint8Array(raw.length); for(var i=0;i<raw.length;i++) a[i]=raw.charCodeAt(i); return a; }
+    function device(){ var u=navigator.userAgent; return /iPhone|iPad/.test(u)?"iPhone":/Macintosh/.test(u)?"Mac":/Android/.test(u)?"Android":"Browser"; }
+    function show(on,txt){ btn.hidden=false; btn.textContent=txt||(on?"Notifications on":"Turn on notifications"); btn.dataset.on=on?"1":"0"; }
+    navigator.serviceWorker.ready.then(function(reg){ return reg.pushManager.getSubscription(); })
+      .then(function(sub){ show(!!sub && Notification.permission==="granted"); }).catch(function(){ show(false); });
+    btn.addEventListener("click",async function(){
+      try{
+        var reg=await navigator.serviceWorker.ready, sub=await reg.pushManager.getSubscription();
+        if(btn.dataset.on==="1"){
+          if(sub){ await api("/api/push/unsubscribe",{method:"POST",body:JSON.stringify({endpoint:sub.endpoint})}); await sub.unsubscribe(); }
+          show(false); return;
+        }
+        var perm=await Notification.requestPermission();
+        if(perm!=="granted"){ show(false,perm==="denied"?"Notifications blocked in Settings":"Turn on notifications"); return; }
+        var k=await api("/api/push/key"); if(!k.ok) throw new Error(k.error||"no key");
+        if(!sub) sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64(k.key)});
+        var r=await api("/api/push/subscribe",{method:"POST",body:JSON.stringify({sub:sub.toJSON(),device:device()})});
+        show(!!r.ok, r.ok?null:"Couldn't turn on: "+(r.error||"error"));
+      }catch(e){ show(false,"Couldn't turn on notifications"); }
+    });
+  })();
 
   /* ══════════════════════════════════════════════
      COMMS LINK: real microphone (no viewer frame here) → /api/chat
