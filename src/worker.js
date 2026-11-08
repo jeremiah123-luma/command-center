@@ -41,6 +41,13 @@ export default {
         await env.STATE.put("canvas:snapshot", JSON.stringify(snap));
         return json({ ok: true, items: snap.items.length });
       }
+      // Push self-test from the command line: a one-time token put in KV (push:selftest, via wrangler) and deleted on use.
+      if (path === "/api/push/selftest" && request.method === "POST") {
+        const want = await env.STATE.get("push:selftest");
+        if (!want || !timingSafeEqual(request.headers.get("x-selftest") || "", want)) return json({ error: "forbidden" }, 403);
+        await env.STATE.delete("push:selftest");
+        return json(await pushSamples(env));
+      }
       if (path === "/login") return request.method === "POST" ? handleLoginPost(request, env) : loginPage();
       if (path === "/logout") return logout(url);
       if (path === "/manifest.webmanifest" || path === "/sw.js" || path.startsWith("/icons/") || path === "/privacy" || path === "/terms") return env.ASSETS.fetch(request);
@@ -1092,6 +1099,21 @@ async function pushCron(env) {
   const room = (/^([^,]+?)\s*(?:Hall)?,\s*Room\s*(\w+)/i.exec(first.location || "") || []).slice(1).join(" ");
   const traffic = c.ok ? ` · ${drive} min with traffic${c.ratio >= 1.3 ? ", heavy" : ""}` : "";
   await pushAll(env, { title: `Leave by ${fmtTime(leave, tz)}`, body: `${courseName(first.summary)} at ${fmtTime(start, tz)}${room ? " in " + room : ""}${traffic}`, url: "/", tag: "leave", urgency: "high" }, `leave:${t.day}`);
+}
+// one of each kind, built from real data, marked "Test" (bypasses the once-keys and the daily cap)
+async function pushSamples(env) {
+  const tz = env.TIMEZONE || "America/New_York", now = Date.now(), msgs = [];
+  const cal = await getCalendar(env).catch(() => ({}));
+  const cls = (cal.events || []).filter(e => isCampus(e) && Date.parse(e.start.dateTime) > now).sort((a, b) => Date.parse(a.start.dateTime) - Date.parse(b.start.dateTime))[0];
+  if (cls) { const st = Date.parse(cls.start.dateTime); msgs.push({ title: `Test · Leave by ${fmtTime(st - 55 * 60e3, tz)}`, body: `${courseName(cls.summary)} at ${fmtTime(st, tz)} · about 45 min drive`, url: "/", tag: "test-leave" }); }
+  const snap = await env.STATE.get("canvas:snapshot", "json");
+  const due = (snap?.items || []).filter(x => !x.submitted && !x.excused && x.dueAt && Date.parse(x.dueAt) > now).sort((a, b) => Date.parse(a.dueAt) - Date.parse(b.dueAt))[0];
+  if (due) msgs.push({ title: `Test · ${due.course}: due ${new Date(due.dueAt).toLocaleDateString("en-US", { timeZone: tz, weekday: "short" })} ${fmtTime(due.dueAt, tz)}`, body: due.title, url: due.url, tag: "test-due" });
+  const car = await env.STATE.get("car:reading", "json");
+  msgs.push({ title: "Test · Charge tonight", body: `i4 at ${car?.percent ?? "--"}%${car?.rangeMi ? ` · ${car.rangeMi} mi` : ""}. Class tomorrow, aim for ${env.CAR_MIN_PERCENT || 60}%+.`, url: "/", tag: "test-car" });
+  const subs = (await env.STATE.get("push:subs", "json")) || [], out = [];
+  for (const m of msgs) for (const s of subs) out.push({ device: s.device, title: m.title, status: await pushTo(env, s, m).catch(e => String(e.message || e)) });
+  return { ok: true, devices: subs.length, sent: out };
 }
 async function carPush(env, r) {   // called after the evening car reading
   const min = Number(env.CAR_MIN_PERCENT || 60);
