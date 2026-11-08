@@ -348,10 +348,11 @@ async function getCalendar(env) {
    app and items that already have a hand-made event that day with mostly the same words in the title.
    Needs the calendar.events scope: after deploying, press Connect Google once more. */
 const CC_CAL = "https://www.googleapis.com/calendar/v3/calendars/primary/events";
+const isOpenItem = (x) => !x.submitted || (x.progressive && x.score != null && x.points && x.score < x.points);   // partial = still open
 function dueWords(s) { return String(s || "").toLowerCase().replace(/[^a-z0-9 ]+/g, " ").split(/\s+/).filter(w => w.length > 2); }
 function sameDeadline(item, ev, tz) {
   const day = (d) => d && new Date(d).toLocaleDateString("en-CA", { timeZone: tz });
-  if (day(item.dueAt) !== day(ev.end?.dateTime || ev.start?.date)) return false;
+  if (day(item.dueAt) !== (ev.start?.date || day(ev.end?.dateTime))) return false;
   const want = dueWords(item.title), have = new Set(dueWords(ev.summary));
   return want.length > 0 && want.filter(w => have.has(w)).length / want.length >= 0.7;
 }
@@ -361,7 +362,7 @@ async function syncDeadlinesToCalendar(env, { dryRun = false } = {}) {
   if (!snap?.items) return { ok: false, error: "no_canvas_snapshot" };
   const ignored = new Set((await env.STATE.get("state:ignored", "json")) || []);
   const now = Date.now(), until = now + days * 86400e3;
-  const due = snap.items.filter(x => x.dueAt && !x.submitted && !x.excused && !ignored.has(x.id) && Date.parse(x.dueAt) > now && Date.parse(x.dueAt) <= until);
+  const due = snap.items.filter(x => x.dueAt && isOpenItem(x) && !x.excused && !ignored.has(x.id) && Date.parse(x.dueAt) > now && Date.parse(x.dueAt) <= until);
   const q = new URLSearchParams({ timeMin: new Date(now).toISOString(), timeMax: new Date(until + 86400e3).toISOString(), singleEvents: "true", maxResults: "250" });
   const existing = (await gfetch(env, `${CC_CAL}?${q}`)).items || [];
   const ours = new Map(existing.filter(e => e.extendedProperties?.private?.ccCanvas).map(e => [e.extendedProperties.private.ccCanvas, e]));
@@ -983,7 +984,7 @@ async function carCron(env) {
    is stored in KV push:subs; a 404/410 from its push service removes it. Secret: VAPID_PRIVATE_JWK (an ES256 private
    key as JWK; the public key is derived from it). Optional var: VAPID_SUBJECT (mailto: or https:), PUSH_DAILY_CAP.
    What gets sent (pushCron, from the 30-minute cron; each once, keyed in KV push:sent:*):
-   - leave-by: on class days, the tick 15–45 min before the leave time for the first NJIT class
+   - leave-by: on class days, the first tick 10–50 min before the leave time for the first NJIT class
    - due soon: each open Canvas item once inside 24 h and once inside 3 h
    - car: "Charge tonight" after the evening reading (carCron) when it's under CAR_MIN_PERCENT before a class day */
 const b64u = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
@@ -1075,7 +1076,7 @@ async function pushCron(env) {
   // due soon
   const snap = await env.STATE.get("canvas:snapshot", "json"), ignored = new Set((await env.STATE.get("state:ignored", "json")) || []);
   for (const x of snap?.items || []) {
-    const open = (!x.submitted || (x.progressive && x.score != null && x.points && x.score < x.points)) && !x.excused && !ignored.has(x.id);
+    const open = isOpenItem(x) && !x.excused && !ignored.has(x.id);
     if (!open || !x.dueAt || (x.type === "discussion_topic" && x.points == null)) continue;
     const left = Date.parse(x.dueAt) - now;
     if (left <= 0 || left > 24 * 3600e3) continue;
@@ -1095,7 +1096,7 @@ async function pushCron(env) {
   if (now < guess - 90 * 60e3 || now > start) return;   // only look up traffic close to the time
   const c = await getCommute(env, new URL(`https://x/?arrive=${new Date(start).toISOString()}`)).catch(() => ({}));
   const drive = c.ok && c.durationMin ? c.durationMin : 45, leave = start - (drive + 10) * 60e3;
-  if (now < leave - 45 * 60e3 || now >= leave - 15 * 60e3) return;
+  if (now < leave - 50 * 60e3 || now >= leave - 10 * 60e3) return;
   const room = (/^([^,]+?)\s*(?:Hall)?,\s*Room\s*(\w+)/i.exec(first.location || "") || []).slice(1).join(" ");
   const traffic = c.ok ? ` · ${drive} min with traffic${c.ratio >= 1.3 ? ", heavy" : ""}` : "";
   await pushAll(env, { title: `Leave by ${fmtTime(leave, tz)}`, body: `${courseName(first.summary)} at ${fmtTime(start, tz)}${room ? " in " + room : ""}${traffic}`, url: "/", tag: "leave", urgency: "high" }, `leave:${t.day}`);
