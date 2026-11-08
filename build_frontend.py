@@ -86,10 +86,19 @@ new_boot = r'''
   (function(){
     var btn=$("push-btn"); if(!btn) return;
     var ok="serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
-    if(!ok){ return; }   // e.g. iPhone Safari tab (not the home-screen app): nothing to offer
+    // a clear chip at the top of Today until this device is subscribed (the small button by Lock stays for turning it off)
+    var chip=document.createElement("button"); chip.type="button"; chip.className="kchip push-chip"; chip.hidden=true;
+    var chips=$("chips"); if(chips) chips.parentNode.insertBefore(chip,chips);
+    if(!ok){   // iPhone Safari tab: Apple only allows push from the home-screen app
+      if(/iPhone|iPad/.test(navigator.userAgent)&&!navigator.standalone){ chip.textContent="Open from your Home Screen to get notifications"; chip.disabled=true; chip.hidden=false; }
+      return;
+    }
+    chip.textContent="Turn on notifications";
+    chip.addEventListener("click",function(){ btn.click(); });
     function b64(s){ s=s.replace(/-/g,"+").replace(/_/g,"/"); var raw=atob(s+"===".slice((s.length+3)%4)); var a=new Uint8Array(raw.length); for(var i=0;i<raw.length;i++) a[i]=raw.charCodeAt(i); return a; }
     function device(){ var u=navigator.userAgent; return /iPhone|iPad/.test(u)?"iPhone":/Macintosh/.test(u)?"Mac":/Android/.test(u)?"Android":"Browser"; }
-    function show(on,txt){ btn.hidden=false; btn.textContent=txt||(on?"Notifications on":"Turn on notifications"); btn.dataset.on=on?"1":"0"; }
+    function show(on,txt){ btn.hidden=false; btn.textContent=txt||(on?"Notifications on":"Turn on notifications"); btn.dataset.on=on?"1":"0";
+      chip.hidden=on||Notification.permission==="denied"&&!txt; if(!on) chip.textContent=txt||"Turn on notifications"; }
     navigator.serviceWorker.ready.then(function(reg){ return reg.pushManager.getSubscription(); })
       .then(function(sub){ show(!!sub && Notification.permission==="granted"); }).catch(function(){ show(false); });
     btn.addEventListener("click",async function(){
@@ -229,6 +238,8 @@ head = f'''<!doctype html>
   a.retry{{text-decoration:none}}
   .lock-form{{margin-top:40px;display:flex;gap:20px;flex-wrap:wrap}}
   #push-btn[data-on="1"]{{color:var(--g)}}
+  .push-chip{{margin:0 0 12px;background:var(--o)!important;color:#000!important;font-weight:500}}
+  .push-chip:disabled{{background:rgba(255,255,255,.1)!important;color:rgba(255,255,255,.7)!important;cursor:default}}
   .logout{{background:none;border:0;padding:0;cursor:pointer;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}}
   .logout:hover{{color:var(--o)}}
 </style>
