@@ -28,6 +28,9 @@ binding = "AI"
 [vars]
 CANVAS_BASE = "https://njit.instructure.com"
 TIMEZONE = "America/New_York"
+# When the CANVAS_TOKEN secret runs out (Canvas tokens last 90 days at most). Push reminders 7 and 2 days before and on the day.
+# After making a new token: npx wrangler secret put CANVAS_TOKEN, then change this date.
+CANVAS_TOKEN_EXPIRES = "2026-12-19"
 # Talk (default, free): which Workers AI model answers, and the daily neuron budget it stays under.
 CHAT_AI_MODEL = "@cf/qwen/qwen3-30b-a3b-fp8"
 AI_DAILY_NEURONS = "9000"

@@ -1085,6 +1085,14 @@ async function pushCron(env) {
     const prog = x.progressive && x.score != null ? ` · ${x.score}/${x.points} so far` : "";
     await pushAll(env, { title: `${x.course}: due ${when}`, body: `${x.title}${prog}`, url: x.url, tag: `due-${x.id}`, urgency: soon ? "high" : "normal" }, `due:${x.id}:${soon ? "3h" : "24h"}`);
   }
+  // Canvas token about to run out (CANVAS_TOKEN_EXPIRES): 7 days, 2 days, and the day itself
+  if (env.CANVAS_TOKEN_EXPIRES) {
+    const days = Math.round((Date.parse(`${env.CANVAS_TOKEN_EXPIRES}T12:00:00Z`) - Date.parse(`${t.day}T12:00:00Z`)) / 86400e3);
+    if ([7, 2, 0].includes(days) && t.min >= 9 * 60) await pushAll(env, {
+      title: days ? `Canvas token expires in ${days} days` : "Canvas token expires today",
+      body: "Canvas → Account → Settings → New Access Token, then: npx wrangler secret put CANVAS_TOKEN (and update CANVAS_TOKEN_EXPIRES).",
+      url: `${env.CANVAS_BASE || "https://njit.instructure.com"}/profile/settings`, tag: "canvas-token" }, `canvastoken:${days}:${env.CANVAS_TOKEN_EXPIRES}`);
+  }
   // leave-by for today's first campus class
   if (await env.STATE.get(`push:sent:leave:${t.day}`)) return;
   const cal = await getCalendar(env);
